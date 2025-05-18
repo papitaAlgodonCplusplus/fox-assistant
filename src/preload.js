@@ -8,7 +8,16 @@ contextBridge.exposeInMainWorld('electron', {
     },
     on: (channel, func) => {
       ipcRenderer.on(channel, (event, ...args) => func(...args));
+    },
+    invoke: (channel, ...args) => {
+      return ipcRenderer.invoke(channel, ...args);
     }
+  },
+  saveApiKey: (apiKey) => {
+    ipcRenderer.send('save-api-key', apiKey);
+  },
+  getApiKey: () => {
+    return ipcRenderer.invoke('get-api-key');
   }
 });
 

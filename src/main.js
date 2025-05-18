@@ -1,6 +1,16 @@
 const { app, BrowserWindow, ipcMain, Menu, Tray, screen } = require('electron');
 const path = require('path');
+const Store = require('electron-store');
 require('dotenv').config();
+
+// Create a store for settings
+const store = new Store();
+
+// Get the API key from store or env
+const apiKey = store.get('openai_api_key') || process.env.OPENAI_API_KEY;
+if (apiKey) {
+  process.env.OPENAI_API_KEY = apiKey;
+}
 
 let mainWindow;
 let tray = null;
@@ -58,7 +68,6 @@ function createWindow() {
 
 function showSettings() {
   // Create settings window or show settings panel 
-  // This can be implemented later with a separate window or panel
   if (mainWindow) {
     mainWindow.webContents.send('show-settings');
   }
@@ -69,6 +78,17 @@ function setupIpcHandlers() {
   ipcMain.on('window-move', (event, { mouseX, mouseY }) => {
     const { x, y } = screen.getCursorScreenPoint();
     mainWindow.setPosition(x - mouseX, y - mouseY);
+  });
+
+  // Save API key to store
+  ipcMain.on('save-api-key', (event, apiKey) => {
+    store.set('openai_api_key', apiKey);
+    process.env.OPENAI_API_KEY = apiKey;
+  });
+
+  // Get API key from store
+  ipcMain.handle('get-api-key', () => {
+    return store.get('openai_api_key') || '';
   });
 }
 

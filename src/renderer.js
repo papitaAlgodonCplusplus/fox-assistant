@@ -214,7 +214,7 @@ function setupDraggable() {
 }
 
 // UI Event Handlers when DOM is loaded
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   // Setup circular menu
   setupCircularMenu();
 
@@ -279,7 +279,7 @@ window.addEventListener('DOMContentLoaded', () => {
   settingsClose.addEventListener('click', () => {
     settingsPanel.style.display = 'none';
   });
-  
+
   // Start voice input
   startVoiceBtn.addEventListener('click', () => {
     speechHandler.startListening();
@@ -327,14 +327,24 @@ window.addEventListener('DOMContentLoaded', () => {
   // Handle API key updates
   const apiKeyInput = document.getElementById('api-key-input');
   if (apiKeyInput) {
+    // Load saved API key
+    try {
+      const savedApiKey = await window.electron.getApiKey();
+      if (savedApiKey) {
+        apiKeyInput.value = savedApiKey;
+      }
+    } catch (error) {
+      console.error('Error loading API key:', error);
+    }
+
+    // Save API key when changed
     apiKeyInput.addEventListener('change', () => {
       const apiKey = apiKeyInput.value.trim();
       if (apiKey) {
-        process.env.OPENAI_API_KEY = apiKey;
+        window.electron.saveApiKey(apiKey);
       }
     });
   }
-
   // Populate voice dropdown
   populateVoiceDropdown();
 });

@@ -7,8 +7,56 @@
     "build": "webpack --config webpack.config.js",
     "watch": "webpack --watch --config webpack.config.js",
     "package": "electron-builder build --win",
+    "package-mac": "electron-builder build --mac",
+    "package-linux": "electron-builder build --linux",
     "dev": "npm run build && npm start",
     "download-whisper": "npx nodejs-whisper download base.en"
+  },
+  "build": {
+    "appId": "com.foxassistant.app",
+    "productName": "Fox Assistant",
+    "directories": {
+      "output": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "src/**/*",
+      "index.html",
+      "styles.css",
+      "assets/**/*",
+      "node_modules/**/*",
+      "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,__pycache__,thumbs.db,.gitignore,.gitattributes,.flowconfig,.yarn-metadata.json,.idea,appveyor.yml,.travis.yml,circle.yml,npm-debug.log,.nyc_output,yarn.lock,.yarn-integrity}"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icons/fox-icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "assets/icons/fox-icon.icns"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "assets/icons/fox-icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
   },
   "keywords": [],
   "author": "",
@@ -18,13 +66,14 @@
     "@types/three": "^0.176.0",
     "axios": "^1.9.0",
     "dotenv": "^16.5.0",
-    "electron": "^36.2.1",
+    "electron-store": "^8.2.0",
     "three": "^0.176.0"
   },
   "devDependencies": {
     "@babel/core": "^7.27.1",
     "@babel/preset-env": "^7.27.2",
     "babel-loader": "^10.0.0",
+    "electron": "^36.2.1",
     "electron-builder": "^24.13.3",
     "webpack": "^5.99.8",
     "webpack-cli": "^5.1.4"
