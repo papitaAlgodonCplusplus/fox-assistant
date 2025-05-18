@@ -2,59 +2,36 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const axios = require('axios');
 
-// Updated speech.js
-// Updated speech.js with better state management
+// Simplified speech.js without requiring compilation
 export class SpeechHandler {
   constructor(onSpeechStart, onSpeechEnd, onResult) {
-    this.recognition = null;
     this.synthesis = window.speechSynthesis;
     this.onSpeechStart = onSpeechStart;
     this.onSpeechEnd = onSpeechEnd;
     this.onResult = onResult;
     this.isListening = false;
-    this.setupSpeechRecognition();
     this.textInputCreated = false; // Flag to track if we've created the text input
+    this.mediaRecorder = null;
+    this.audioChunks = [];
+    this.tempDir = path.join(os.tmpdir(), 'fox-assistant');
+    this.apiKey = process.env.OPENAI_API_KEY;
+    
+    // Create temp directory if it doesn't exist
+    if (!fs.existsSync(this.tempDir)) {
+      fs.mkdirSync(this.tempDir, { recursive: true });
+    }
   }
 
-  setupSpeechRecognition() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.error('Speech recognition not supported in this browser.');
+  setupAudioRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.error('Media devices API not supported');
       this.useFallbackMode();
-      return;
+      return false;
     }
 
-    this.recognition = new SpeechRecognition();
-    this.recognition.continuous = false;
-    this.recognition.interimResults = false;
-
-    this.recognition.onstart = () => {
-      this.isListening = true;
-      this.onSpeechStart();
-      console.log('Speech recognition started');
-    };
-
-    this.recognition.onend = () => {
-      this.isListening = false;
-      this.onSpeechEnd();
-      console.log('Speech recognition ended');
-    };
-
-    this.recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      this.onResult(transcript);
-    };
-
-    this.recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-      this.isListening = false;
-      this.onSpeechEnd();
-
-      if (event.error === 'network') {
-        this.useFallbackMode();
-      }
-    };
+    return true;
   }
 
   useFallbackMode() {
@@ -110,33 +87,211 @@ export class SpeechHandler {
   }
 
   startListening() {
-    // Check if already listening, don't start again if so
+    // Check if already listening
     if (this.isListening) {
       console.log('Already listening, not starting again');
       return;
     }
 
-    if (!this.recognition) {
-      this.useFallbackMode();
+    // Setup audio recording if not done already
+    if (!this.setupAudioRecording()) {
       return;
     }
 
-    try {
-      this.recognition.start();
-    } catch (error) {
-      console.error('Error starting recognition:', error);
-      this.useFallbackMode();
-    }
+    // Get user media
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        this.isListening = true;
+        this.onSpeechStart();
+        
+        // Setup media recorder
+        this.mediaRecorder = new MediaRecorder(stream);
+        this.audioChunks = [];
+        
+        this.mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            this.audioChunks.push(event.data);
+          }
+        };
+        
+        this.mediaRecorder.onstop = async () => {
+          // Process the recorded audio with Whisper API
+          try {
+            await this.processAudioWithWhisper();
+          } catch (error) {
+            console.error('Error processing audio with Whisper:', error);
+            this.onSpeechEnd();
+          }
+          
+          // Close the stream tracks
+          stream.getTracks().forEach(track => track.stop());
+        };
+        
+        // Start recording
+        this.mediaRecorder.start();
+        console.log('Recording started');
+      })
+      .catch(error => {
+        console.error('Error accessing microphone:', error);
+        this.isListening = false;
+        this.useFallbackMode();
+      });
   }
 
   stopListening() {
-    if (!this.isListening || !this.recognition) return;
+    if (!this.isListening || !this.mediaRecorder) return;
 
     try {
-      this.recognition.stop();
+      this.mediaRecorder.stop();
+      this.isListening = false;
+      console.log('Recording stopped');
     } catch (error) {
-      console.error('Error stopping recognition:', error);
+      console.error('Error stopping recording:', error);
     }
+  }
+
+  async processAudioWithWhisper() {
+    if (this.audioChunks.length === 0) {
+      console.error('No audio data recorded');
+      this.onSpeechEnd();
+      return;
+    }
+    
+    try {
+      // Create a blob from the audio chunks
+      const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+      
+      // Save the blob to a temporary file
+      const audioFilePath = path.join(this.tempDir, 'recording.webm');
+      
+      // Convert Blob to Buffer
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      
+      // Write to file
+      fs.writeFileSync(audioFilePath, buffer);
+      
+      console.log('Audio saved to temporary file:', audioFilePath);
+      
+      // Since compilation is an issue, let's use the OpenAI API
+      if (this.apiKey) {
+        const transcript = await this.sendToWhisperAPI(audioFilePath);
+        if (transcript) {
+          this.onSpeechEnd();
+          this.onResult(transcript);
+        } else {
+          throw new Error('No transcript received from Whisper API');
+        }
+      } else {
+        // If no API key, use browser's Speech Recognition as fallback
+        const transcript = await this.useBrowserSpeechRecognition(audioFilePath);
+        if (transcript) {
+          this.onSpeechEnd();
+          this.onResult(transcript);
+        } else {
+          throw new Error('Speech recognition failed');
+        }
+      }
+      
+      // Clean up temp file
+      if (fs.existsSync(audioFilePath)) {
+        fs.unlinkSync(audioFilePath);
+      }
+      
+    } catch (error) {
+      console.error('Error processing audio:', error);
+      this.onSpeechEnd();
+    }
+  }
+
+  async sendToWhisperAPI(audioFilePath) {
+    if (!this.apiKey) {
+      console.error('OpenAI API key not found in environment variables');
+      return null;
+    }
+    
+    try {
+      const formData = new FormData();
+      const audioFile = fs.readFileSync(audioFilePath);
+      
+      // Create a Blob from the file data
+      const audioBlob = new Blob([audioFile], { type: 'audio/webm' });
+      
+      // Append the file to formData
+      formData.append('file', audioBlob, 'audio.webm');
+      formData.append('model', 'whisper-1');
+      
+      const response = await axios.post(
+        'https://api.openai.com/v1/audio/transcriptions',
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      
+      console.log('Whisper API response:', response.data);
+      
+      if (response.data && response.data.text) {
+        return response.data.text;
+      } else {
+        console.error('Unexpected response format from Whisper API');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error calling Whisper API:', error);
+      if (error.response) {
+        console.error('API response error:', error.response.data);
+      }
+      return null;
+    }
+  }
+
+  // Fallback to browser's speech recognition if API is not available
+  async useBrowserSpeechRecognition(audioFilePath) {
+    return new Promise((resolve) => {
+      const audio = new Audio();
+      audio.src = URL.createObjectURL(new Blob([fs.readFileSync(audioFilePath)]));
+      
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.error('Speech recognition not supported in this browser.');
+        resolve(null);
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        resolve(transcript);
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        resolve(null);
+      };
+
+      recognition.onend = () => {
+        // If no result was received, resolve with null
+        resolve(null);
+      };
+
+      // Play the audio and start recognition
+      audio.onplay = () => {
+        recognition.start();
+      };
+
+      audio.play().catch(err => {
+        console.error('Error playing audio:', err);
+        resolve(null);
+      });
+    });
   }
 
   speak(text) {

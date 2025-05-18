@@ -53,7 +53,7 @@ Your responses should be concise, vivid, emotionally rich, and full of sparkle. 
             },
             ...this.history
           ],
-          max_tokens: 150
+          max_tokens: 500
         },
         {
           headers: {

@@ -7,7 +7,8 @@
     "build": "webpack --config webpack.config.js",
     "watch": "webpack --watch --config webpack.config.js",
     "package": "electron-builder build --win",
-    "dev": "npm run build && npm start"
+    "dev": "npm run build && npm start",
+    "download-whisper": "npx nodejs-whisper download base.en"
   },
   "keywords": [],
   "author": "",

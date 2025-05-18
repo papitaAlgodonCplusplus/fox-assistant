@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Fox } from './fox';
-import { SpeechHandler } from './web-speech.js'; 
+import { SpeechHandler } from './speech.js'; 
 import { ChatGPTHandler } from './chatgpt.js'; 
 
 // Initialize Three.js scene
