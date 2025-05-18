@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Fox Assistant</title>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+    #ui-container {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      width: 100%;
+      padding: 20px;
+      color: white;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+    }
+    #status {
+      cursor: pointer;
+      font-weight: bold;
+      padding: 10px;
+      text-align: center;
+    }
+    #conversation {
+      padding: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    .message {
+      margin-bottom: 10px;
+      padding: 5px;
+      border-radius: 5px;
+    }
+    .user { background-color: rgba(100, 100, 255, 0.3); }
+    .assistant { background-color: rgba(100, 255, 100, 0.3); }
+    #settings {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 5px;
+    }
+    select {
+      padding: 5px;
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="settings">
+    <div>
+      <label for="voice-select">Fox Voice:</label>
+      <select id="voice-select"></select>
+    </div>
+  </div>
+
+  <div id="ui-container">
+    <div id="status">Click to talk</div>
+    <div id="conversation">
+      <div class="message user" id="user-input"></div>
+      <div class="message assistant" id="ai-response"></div>
+    </div>
+  </div>
+
+  <script src="./dist/renderer.js"></script>
+</body>
+</html>
