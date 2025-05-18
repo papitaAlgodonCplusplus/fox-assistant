@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Fox } from './fox';
-import { SpeechHandler } from './speech.js'; 
+import { SpeechHandler } from './speech.js';
 import { ChatGPTHandler } from './chatgpt.js'; 
 
 // Initialize Three.js scene
@@ -12,8 +12,7 @@ scene.background = new THREE.Color(0xf0f0f0);
 const camera = new THREE.PerspectiveCamera(
   45, window.innerWidth / window.innerHeight, 0.1, 1000
 );
-camera.position.set(0, 10, -100);
-camera.lookAt(0, 0, 0);
+camera.position.set(0, 1, 5);
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -100,8 +99,8 @@ async function populateVoiceDropdown() {
       voiceSelect.appendChild(option);
     });
 
-    // Set default voice
-    const defaultVoice = voices.find(v => v.name.includes('Zira')) || voices[0];
+    // Set default voice to 'alloy'
+    const defaultVoice = voices.find(v => v.name === 'ballad') || voices[0];
     if (defaultVoice) {
       voiceSelect.value = defaultVoice.name;
       speechHandler.setVoice(defaultVoice.name);
@@ -137,7 +136,6 @@ window.addEventListener('DOMContentLoaded', () => {
     textModeBtn.classList.add('active-button');
     voiceModeBtn.classList.remove('active-button');
     document.getElementById('status').textContent = 'Type your message';
-    speechHandler.setInputMode('text');
   });
   
   // Show voice input
@@ -147,7 +145,6 @@ window.addEventListener('DOMContentLoaded', () => {
     textModeBtn.classList.remove('active-button');
     voiceModeBtn.classList.add('active-button');
     document.getElementById('status').textContent = 'Ready for voice';
-    speechHandler.setInputMode('voice');
   });
   
   // Start voice input
@@ -199,6 +196,14 @@ window.addEventListener('DOMContentLoaded', () => {
   
   // Populate voice dropdown
   populateVoiceDropdown();
+  
+  // Handle API key updates
+  apiKeyInput.addEventListener('change', () => {
+    const apiKey = apiKeyInput.value.trim();
+    if (apiKey) {
+      process.env.OPENAI_API_KEY = apiKey;
+    }
+  });
 });
 
 // Animation loop
