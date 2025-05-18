@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Fox } from './fox';
-import { SpeechHandler } from './offline-speech.js';
-import { ChatGPTHandler } from './chatgpt.js';
+import { SpeechHandler } from './web-speech.js'; 
+import { ChatGPTHandler } from './chatgpt.js'; 
 
 // Initialize Three.js scene
 const scene = new THREE.Scene();
@@ -50,7 +50,6 @@ const speechHandler = new SpeechHandler(
     document.getElementById('status').textContent = 'Processing...';
   },
   // On result
-  // On result
   async (transcript) => {
     document.getElementById('user-input').textContent = transcript;
 
@@ -73,16 +72,15 @@ const speechHandler = new SpeechHandler(
 
       // Back to idle
       fox.setState('idle');
-      document.getElementById('status').textContent = 'Click to talk';
+      document.getElementById('status').textContent = 'Ready';
     } catch (error) {
       console.error('Error in conversation flow:', error);
       document.getElementById('ai-response').textContent = 'Sorry, I encountered an error. Please try again.';
       fox.setState('idle');
-      document.getElementById('status').textContent = 'Click to talk';
+      document.getElementById('status').textContent = 'Ready';
     }
   }
 );
-
 
 // Populate voice dropdown
 async function populateVoiceDropdown() {
@@ -97,11 +95,11 @@ async function populateVoiceDropdown() {
     voices.forEach(voice => {
       const option = document.createElement('option');
       option.value = voice.name;
-      option.textContent = `${voice.name} (${voice.culture})`;
+      option.textContent = `${voice.name} (${voice.lang})`;
       voiceSelect.appendChild(option);
     });
 
-    // Set default voice (Microsoft Zira is a common Windows voice)
+    // Set default voice
     const defaultVoice = voices.find(v => v.name.includes('Zira')) || voices[0];
     if (defaultVoice) {
       voiceSelect.value = defaultVoice.name;
@@ -117,17 +115,89 @@ async function populateVoiceDropdown() {
   }
 }
 
-// Call this after initializing speechHandler
-populateVoiceDropdown();
-
 // Initialize ChatGPT handler
 const chatGPT = new ChatGPTHandler();
 
-// Listen for clicks to start voice recognition
-document.addEventListener('click', () => {
-  if (!speechHandler.isListening) {
+// UI Event Handlers when DOM is loaded
+window.addEventListener('DOMContentLoaded', () => {
+  const textModeBtn = document.getElementById('text-mode-btn');
+  const voiceModeBtn = document.getElementById('voice-mode-btn');
+  const textInputContainer = document.getElementById('text-input-container');
+  const voiceInputContainer = document.getElementById('voice-input-container');
+  const startVoiceBtn = document.getElementById('start-voice-btn');
+  const stopVoiceBtn = document.getElementById('stop-voice-btn');
+  const textInput = document.getElementById('text-input');
+  const sendTextBtn = document.getElementById('send-text-btn');
+  
+  // Show text input
+  textModeBtn.addEventListener('click', () => {
+    textInputContainer.style.display = 'flex';
+    voiceInputContainer.style.display = 'none';
+    textModeBtn.classList.add('active-button');
+    voiceModeBtn.classList.remove('active-button');
+    document.getElementById('status').textContent = 'Type your message';
+    speechHandler.setInputMode('text');
+  });
+  
+  // Show voice input
+  voiceModeBtn.addEventListener('click', () => {
+    textInputContainer.style.display = 'none';
+    voiceInputContainer.style.display = 'flex';
+    textModeBtn.classList.remove('active-button');
+    voiceModeBtn.classList.add('active-button');
+    document.getElementById('status').textContent = 'Ready for voice';
+    speechHandler.setInputMode('voice');
+  });
+  
+  // Start voice input
+  startVoiceBtn.addEventListener('click', () => {
     speechHandler.startListening();
+    startVoiceBtn.classList.add('active-button');
+    stopVoiceBtn.classList.remove('active-button');
+  });
+  
+  // Stop voice input
+  stopVoiceBtn.addEventListener('click', () => {
+    speechHandler.stopListening();
+    startVoiceBtn.classList.remove('active-button');
+    stopVoiceBtn.classList.add('active-button');
+  });
+  
+  // Send text message
+  sendTextBtn.addEventListener('click', sendTextMessage);
+  
+  // Send text message on Enter
+  textInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      sendTextMessage();
+    }
+  });
+  
+  // Text input handler
+  function sendTextMessage() {
+    const text = textInput.value.trim();
+    if (text) {
+      // Show user input in conversation
+      document.getElementById('user-input').textContent = text;
+      
+      // Clear input field
+      textInput.value = '';
+      
+      // Process input through main conversation flow (reusing the result handler)
+      speechHandler.onSpeechStart();
+      setTimeout(() => {
+        speechHandler.onSpeechEnd();
+        // Call the same result handler used for voice
+        speechHandler.onResult(text);
+      }, 500);
+    }
   }
+  
+  // Set text mode as default
+  textModeBtn.click();
+  
+  // Populate voice dropdown
+  populateVoiceDropdown();
 });
 
 // Animation loop

@@ -4,7 +4,13 @@
   <meta charset="UTF-8">
   <title>Fox Assistant</title>
   <style>
-    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+    body { 
+      margin: 0; 
+      overflow: hidden; 
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+    }
+    
     #ui-container {
       position: absolute;
       bottom: 20px;
@@ -15,24 +21,29 @@
       background-color: rgba(0, 0, 0, 0.5);
       z-index: 100;
     }
+    
     #status {
-      cursor: pointer;
       font-weight: bold;
       padding: 10px;
       text-align: center;
     }
+    
     #conversation {
       padding: 10px;
       max-height: 150px;
       overflow-y: auto;
+      margin-bottom: 10px;
     }
+    
     .message {
       margin-bottom: 10px;
       padding: 5px;
       border-radius: 5px;
     }
+    
     .user { background-color: rgba(100, 100, 255, 0.3); }
     .assistant { background-color: rgba(100, 255, 100, 0.3); }
+    
     #settings {
       position: absolute;
       top: 10px;
@@ -40,10 +51,59 @@
       background-color: rgba(0, 0, 0, 0.5);
       padding: 10px;
       border-radius: 5px;
+      color: white;
     }
-    select {
-      padding: 5px;
+    
+    select, button {
+      padding: 8px 12px;
       margin: 5px 0;
+      border-radius: 4px;
+      border: none;
+      background-color: #4a86e8;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    button:hover {
+      background-color: #3a76d8;
+    }
+    
+    #input-mode-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+    
+    #input-mode-container button {
+      margin: 0 5px;
+      flex: 1;
+      max-width: 150px;
+    }
+    
+    #text-input-container {
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    #voice-input-container {
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    #text-input {
+      padding: 8px;
+      width: 70%;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      margin-right: 5px;
+    }
+    
+    .active-button {
+      background-color: #2d5bb9 !important;
+      box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
     }
   </style>
 </head>
@@ -56,10 +116,29 @@
   </div>
 
   <div id="ui-container">
-    <div id="status">Click to talk</div>
     <div id="conversation">
       <div class="message user" id="user-input"></div>
       <div class="message assistant" id="ai-response"></div>
+    </div>
+    
+    <div id="status">Choose input method</div>
+    
+    <!-- Input mode selection -->
+    <div id="input-mode-container">
+      <button id="text-mode-btn">Text Input</button>
+      <button id="voice-mode-btn">Voice Input</button>
+    </div>
+    
+    <!-- Text input container -->
+    <div id="text-input-container">
+      <input type="text" id="text-input" placeholder="Type your message here...">
+      <button id="send-text-btn">Send</button>
+    </div>
+    
+    <!-- Voice input container -->
+    <div id="voice-input-container">
+      <button id="start-voice-btn">Start Listening</button>
+      <button id="stop-voice-btn">Stop Listening</button>
     </div>
   </div>
 
