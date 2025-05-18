@@ -2,12 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Fox } from './fox';
 import { SpeechHandler } from './speech.js';
-import { ChatGPTHandler } from './chatgpt.js'; 
+import { ChatGPTHandler } from './chatgpt.js';
 import { ipcRenderer } from 'electron';
-
-// Track if the window is being dragged
-let isDragging = false;
-let dragOffset = { x: 0, y: 0 };
 
 // Initialize Three.js scene
 const scene = new THREE.Scene();
@@ -21,8 +17,7 @@ camera.position.set(0, 35, 105);
 camera.lookAt(0, 2, 0);
 
 // Renderer with alpha (transparency)
-const renderer = new THREE.WebGLRenderer({ 
-  antialias: true,
+const renderer = new THREE.WebGLRenderer({
   antialias: true,
   alpha: true,  // Enable transparency
   premultipliedAlpha: false // Fix transparency issues
@@ -31,12 +26,6 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x000000, 0); // Transparent background
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
-
-// Disable OrbitControls for the desktop assistant
-// Instead, we'll handle dragging manually
-// const controls = new OrbitControls(camera, renderer.domElement);
-// controls.enableDamping = true;
-// controls.dampingFactor = 0.05;
 
 // Lighting
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
@@ -131,99 +120,164 @@ async function populateVoiceDropdown() {
 // Initialize ChatGPT handler
 const chatGPT = new ChatGPTHandler();
 
-// Make window draggable (for frameless window)
-function setupDraggable() {
-  const dragRegion = document.getElementById('drag-region');
-  
-  dragRegion.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    dragOffset.x = e.clientX;
-    dragOffset.y = e.clientY;
+// Setup Circular Menu
+function setupCircularMenu() {
+  const circularMenu = document.getElementById('circular-menu');
+  const buttons = circularMenu.querySelectorAll('.menu-button');
+  const numButtons = buttons.length;
+
+  // Position buttons in a circle
+  const radius = 80; // Radius of the circle
+  const startAngle = -Math.PI / 2; // Start from the top
+
+  buttons.forEach((button, index) => {
+    // Calculate angle for this button
+    const angle = startAngle + (2 * Math.PI * index / numButtons);
+
+    // Calculate position
+    const x = radius * Math.cos(angle);
+    const y = radius * Math.sin(angle);
+
+    // Position the button
+    button.style.left = `calc(50% + ${x}px - 20px)`;
+    button.style.top = `calc(50% + ${y}px - 20px)`;
+
+    // Add tooltip functionality
+    const tooltip = document.getElementById('tooltip');
+
+    button.addEventListener('mouseenter', (e) => {
+      const tooltipText = button.getAttribute('data-tooltip');
+      tooltip.textContent = tooltipText;
+      tooltip.style.left = `${e.clientX + 10}px`;
+      tooltip.style.top = `${e.clientY + 10}px`;
+      tooltip.style.opacity = '1';
+    });
+
+    button.addEventListener('mousemove', (e) => {
+      tooltip.style.left = `${e.clientX + 10}px`;
+      tooltip.style.top = `${e.clientY + 10}px`;
+    });
+
+    button.addEventListener('mouseleave', () => {
+      tooltip.style.opacity = '0';
+    });
   });
-  
+}
+
+// Make fox clickable
+function setupFoxClickable() {
+  const foxClickableArea = document.getElementById('fox-clickable-area');
+  const circularMenu = document.getElementById('circular-menu');
+  let menuVisible = false;
+
+  foxClickableArea.addEventListener('click', () => {
+    menuVisible = !menuVisible;
+
+    if (menuVisible) {
+      circularMenu.classList.add('visible');
+    } else {
+      circularMenu.classList.remove('visible');
+      // Hide the UI as well when closing the menu
+      document.getElementById('ui-container').classList.add('hidden');
+    }
+  });
+}
+
+// Draggable functionality
+let isDragging = false;
+let dragOffset = { x: 0, y: 0 };
+
+function setupDraggable() {
+  const foxClickableArea = document.getElementById('fox-clickable-area');
+
+  foxClickableArea.addEventListener('mousedown', (e) => {
+    // Only start dragging if not clicking a menu button
+    if (e.target === foxClickableArea) {
+      isDragging = true;
+      dragOffset.x = e.clientX;
+      dragOffset.y = e.clientY;
+    }
+  });
+
   document.addEventListener('mousemove', (e) => {
     if (isDragging) {
-      ipcRenderer.send('window-move', { 
-        mouseX: e.clientX - dragOffset.x, 
-        mouseY: e.clientY - dragOffset.y 
+      ipcRenderer.send('window-move', {
+        mouseX: e.clientX - dragOffset.x,
+        mouseY: e.clientY - dragOffset.y
       });
     }
   });
-  
+
   document.addEventListener('mouseup', () => {
     isDragging = false;
   });
 }
 
-// Setup context menu
-function setupContextMenu() {
-  const contextMenuButtons = document.querySelectorAll('.context-menu-button');
-  
-  contextMenuButtons.forEach(button => {
-    button.addEventListener('click', (e) => {
-      const action = e.target.dataset.action;
-      
-      switch (action) {
-        case 'minimize':
-          ipcRenderer.send('minimize-to-tray');
-          break;
-        case 'settings':
-          toggleSettingsPanel();
-          break;
-        case 'quit':
-          window.close();
-          break;
-      }
-    });
-  });
-}
-
-// Toggle settings panel
-function toggleSettingsPanel() {
-  const settingsPanel = document.getElementById('settings');
-  settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
-}
-
-// Toggle UI visibility
-function toggleUI() {
-  const uiContainer = document.getElementById('ui-container');
-  uiContainer.classList.toggle('hidden');
-}
-
 // UI Event Handlers when DOM is loaded
 window.addEventListener('DOMContentLoaded', () => {
+  // Setup circular menu
+  setupCircularMenu();
+
+  // Setup fox clickable area
+  setupFoxClickable();
+
+  // Setup draggable window
+  setupDraggable();
+
+  // Setup menu button listeners
   const textModeBtn = document.getElementById('text-mode-btn');
   const voiceModeBtn = document.getElementById('voice-mode-btn');
+  const settingsBtn = document.getElementById('settings-btn');
+
   const textInputContainer = document.getElementById('text-input-container');
   const voiceInputContainer = document.getElementById('voice-input-container');
   const startVoiceBtn = document.getElementById('start-voice-btn');
   const stopVoiceBtn = document.getElementById('stop-voice-btn');
   const textInput = document.getElementById('text-input');
   const sendTextBtn = document.getElementById('send-text-btn');
-  const toggleUIBtn = document.getElementById('toggle-ui-btn');
-  
-  // Setup draggable window
-  setupDraggable();
-  
-  // Setup context menu
-  setupContextMenu();
-  
-  // Show text input
+  const uiContainer = document.getElementById('ui-container');
+  const settingsPanel = document.getElementById('settings');
+  const settingsClose = document.getElementById('settings-close');
+
+  // Text mode button
   textModeBtn.addEventListener('click', () => {
+    // Show UI container
+    uiContainer.classList.remove('hidden');
+
+    // Setup for text mode
     textInputContainer.style.display = 'flex';
     voiceInputContainer.style.display = 'none';
-    textModeBtn.classList.add('active-button');
-    voiceModeBtn.classList.remove('active-button');
     document.getElementById('status').textContent = 'Type your message';
+
+    // Hide circular menu
+    document.getElementById('circular-menu').classList.remove('visible');
   });
-  
-  // Show voice input
+
+  // Voice mode button
   voiceModeBtn.addEventListener('click', () => {
+    // Show UI container
+    uiContainer.classList.remove('hidden');
+
+    // Setup for voice mode
     textInputContainer.style.display = 'none';
     voiceInputContainer.style.display = 'flex';
-    textModeBtn.classList.remove('active-button');
-    voiceModeBtn.classList.add('active-button');
     document.getElementById('status').textContent = 'Ready for voice';
+
+    // Hide circular menu
+    document.getElementById('circular-menu').classList.remove('visible');
+  });
+
+  // Settings button
+  settingsBtn.addEventListener('click', () => {
+    settingsPanel.style.display = 'block';
+
+    // Hide circular menu
+    document.getElementById('circular-menu').classList.remove('visible');
+  });
+
+  // Settings close button
+  settingsClose.addEventListener('click', () => {
+    settingsPanel.style.display = 'none';
   });
   
   // Start voice input
@@ -232,37 +286,34 @@ window.addEventListener('DOMContentLoaded', () => {
     startVoiceBtn.classList.add('active-button');
     stopVoiceBtn.classList.remove('active-button');
   });
-  
+
   // Stop voice input
   stopVoiceBtn.addEventListener('click', () => {
     speechHandler.stopListening();
     startVoiceBtn.classList.remove('active-button');
     stopVoiceBtn.classList.add('active-button');
   });
-  
-  // Toggle UI visibility
-  toggleUIBtn.addEventListener('click', toggleUI);
-  
+
   // Send text message
   sendTextBtn.addEventListener('click', sendTextMessage);
-  
+
   // Send text message on Enter
   textInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       sendTextMessage();
     }
   });
-  
+
   // Text input handler
   function sendTextMessage() {
     const text = textInput.value.trim();
     if (text) {
       // Show user input in conversation
       document.getElementById('user-input').textContent = text;
-      
+
       // Clear input field
       textInput.value = '';
-      
+
       // Process input through main conversation flow (reusing the result handler)
       speechHandler.onSpeechStart();
       setTimeout(() => {
@@ -272,13 +323,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }, 500);
     }
   }
-  
-  // Set text mode as default
-  textModeBtn.click();
-  
-  // Populate voice dropdown
-  populateVoiceDropdown();
-  
+
   // Handle API key updates
   const apiKeyInput = document.getElementById('api-key-input');
   if (apiKeyInput) {
@@ -289,6 +334,9 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // Populate voice dropdown
+  populateVoiceDropdown();
 });
 
 // Animation loop
@@ -299,9 +347,6 @@ function animate() {
 
   const delta = clock.getDelta();
   fox.update(delta);
-  
-  // Update controls only if they exist
-  // if (controls) controls.update();
 
   renderer.render(scene, camera);
 }

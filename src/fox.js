@@ -30,8 +30,8 @@ export class Fox {
         this.model = fbx;
         this.model.scale.set(0.04, 0.04, 0.04); // Adjust scale for floating assistant
         
-        // Position for floating appearance - centered in the window
-        this.model.position.set(0, -0.5, 0);
+        // Center the model in the window
+        this.model.position.set(0, 0, 0);
         
         // Apply texture to the model
         this.model.traverse((child) => {
@@ -106,7 +106,7 @@ export class Fox {
     if (this.model) {
       // Gentle bob up and down
       const floatOffset = Math.sin(Date.now() * 0.001) * 0.05;
-      this.model.position.y = -0.5 + floatOffset;
+      this.model.position.y = floatOffset;
       
       // Slight rotation for liveliness
       this.model.rotation.y = Math.sin(Date.now() * 0.0005) * 0.2;

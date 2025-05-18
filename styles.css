@@ -5,37 +5,79 @@ body {
     background: transparent;
 }
 
-/* Make the main content area draggable */
-#drag-region {
+/* Make the fox area clickable */
+#fox-clickable-area {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 5;
-    -webkit-app-region: no-drag;
-    z-index: 9999;
-    pointer-events: none;
-    /* Allows custom drag handling */
-    cursor: move;
+    z-index: 10;
+    cursor: pointer;
 }
 
+/* Circular menu container */
+#circular-menu {
+    position: absolute;
+    top: 38%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 100;
+}
+
+#circular-menu.visible {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Circular menu buttons */
+.menu-button {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.3s, background-color 0.2s;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    font-size: 14px;
+    z-index: 101;
+}
+
+.menu-button:hover {
+    background-color: rgba(74, 134, 232, 0.9);
+    transform: scale(1.2);
+}
+
+/* UI container for text/voice input */
 #ui-container {
     position: absolute;
-    bottom: 0px;
-    left: 0;
-    width: 100%;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 250px;
     padding: 10px;
     color: white;
     background-color: rgba(0, 0, 0, 0.7);
     border-radius: 10px;
     z-index: 100;
     transition: opacity 0.3s, transform 0.3s;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
 }
 
 #ui-container.hidden {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translate(-50%, 20px);
     pointer-events: none;
 }
 
@@ -48,8 +90,7 @@ body {
 
 #conversation {
     padding: 5px;
-    max-height: 100px;
-    max-width: 270px;
+    max-height: 80px;
     overflow-y: auto;
     margin-top: 5px;
     font-size: 12px;
@@ -71,27 +112,37 @@ body {
 
 #settings {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: rgba(0, 0, 0, 0.7);
-    padding: 10px;
-    border-radius: 5px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.85);
+    padding: 15px;
+    border-radius: 10px;
     color: white;
     display: none;
     z-index: 200;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
     animation: fadeIn 0.3s ease;
+    width: 80%;
+    max-width: 250px;
+}
+
+.settings-close {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    cursor: pointer;
+    font-size: 18px;
 }
 
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(-10px);
+        transform: translate(-50%, -55%);
     }
-
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translate(-50%, -50%);
     }
 }
 
@@ -151,7 +202,7 @@ button:hover {
 }
 
 #api-key-container {
-    margin-top: 5px;
+    margin-top: 10px;
 }
 
 #api-key-input {
@@ -163,62 +214,16 @@ button:hover {
     font-size: 12px;
 }
 
-/* Control buttons */
-#control-buttons {
+/* Tooltip */
+.tooltip {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 150;
-    display: flex;
-}
-
-.control-button {
-    width: 30px;
-    height: 30px;
-    margin: 0 3px;
-    border-radius: 50%;
-    background-color: rgba(0, 0, 0, 0.5);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.2s, transform 0.2s;
-}
-
-.control-button:hover {
     background-color: rgba(0, 0, 0, 0.8);
-    transform: scale(1.1);
-}
-
-/* Context menu */
-#context-menu {
-    display: none;
-    position: absolute;
-    background-color: rgba(30, 30, 30, 0.9);
-    border-radius: 5px;
-    padding: 5px 0;
-    min-width: 120px;
-    z-index: 1000;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    animation: fadeIn 0.2s ease;
-}
-
-.context-menu-item {
-    padding: 5px 15px;
-    cursor: pointer;
     color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
     font-size: 12px;
-    transition: background-color 0.2s;
-}
-
-.context-menu-item:hover {
-    background-color: rgba(80, 80, 80, 0.9);
-}
-
-.separator {
-    height: 1px;
-    background-color: #555;
-    margin: 5px 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    white-space: nowrap;
 }

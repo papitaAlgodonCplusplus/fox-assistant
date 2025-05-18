@@ -70,11 +70,6 @@ function setupIpcHandlers() {
     const { x, y } = screen.getCursorScreenPoint();
     mainWindow.setPosition(x - mouseX, y - mouseY);
   });
-
-  // Handle minimize to tray
-  ipcMain.on('minimize-to-tray', () => {
-    mainWindow.hide();
-  });
 }
 
 app.whenReady().then(() => {

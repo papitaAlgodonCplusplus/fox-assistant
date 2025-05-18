@@ -1,21 +1,31 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="UTF-8">
   <link rel="stylesheet" href="styles.css">
-
 </head>
+
 <body>
-  <!-- Drag region for window movement -->
-  <div id="drag-region"></div>
-  
-  <!-- Control buttons -->
-  <div id="control-buttons">
-    <button id="toggle-ui-btn" class="control-button">UI</button>
+  <!-- Fox clickable area -->
+  <div id="fox-clickable-area"></div>
+
+  <!-- Circular menu -->
+  <div id="circular-menu">
+    <div class="menu-button" id="text-mode-btn" data-tooltip="Text Chat">T</div>
+    <div class="menu-button" id="voice-mode-btn" data-tooltip="Voice Chat">V</div>
+    <div class="menu-button" id="settings-btn" data-tooltip="Settings">S</div>
+    <div class="menu-button" id="minimize-btn" data-tooltip="Minimize">-</div>
+    <div class="menu-button" id="quit-btn" data-tooltip="Quit">X</div>
   </div>
-  
+
+  <!-- Tooltip element -->
+  <div class="tooltip" id="tooltip"></div>
+
   <!-- Settings panel -->
   <div id="settings">
+    <div class="settings-close" id="settings-close">×</div>
+    <h3>Settings</h3>
     <div>
       <label for="voice-select">Voice:</label>
       <select id="voice-select"></select>
@@ -27,41 +37,49 @@
   </div>
 
   <!-- Main UI container -->
-  <div id="ui-container">
+  <div id="ui-container" class="hidden">
     <div id="conversation">
       <div class="message user" id="user-input"></div>
       <div class="message assistant" id="ai-response"></div>
     </div>
-    
+
     <div id="status">Choose input method</div>
-    
-    <!-- Input mode selection -->
-    <div id="input-mode-container">
-      <button id="text-mode-btn">Text Input</button>
-      <button id="voice-mode-btn">Voice Input</button>
-    </div>
-    
+
     <!-- Text input container -->
     <div id="text-input-container">
       <input type="text" id="text-input" placeholder="Type your message here...">
       <button id="send-text-btn">Send</button>
     </div>
-    
+
     <!-- Voice input container -->
     <div id="voice-input-container">
       <button id="start-voice-btn">Start</button>
       <button id="stop-voice-btn">Stop</button>
     </div>
   </div>
-  
-  <!-- Context menu -->
-  <div id="context-menu">
-    <div class="context-menu-item context-menu-button" data-action="settings">Settings</div>
-    <div class="separator"></div>
-    <div class="context-menu-item context-menu-button" data-action="minimize">Minimize to Tray</div>
-    <div class="context-menu-item context-menu-button" data-action="quit">Quit</div>
-  </div>
 
   <script src="./dist/renderer.js"></script>
 </body>
+<script>
+  // Add close button handler (requires Electron or similar)
+  document.getElementById('quit-btn').onclick = function () {
+    if (window.electronAPI && window.electronAPI.closeWindow) {
+      window.electronAPI.closeWindow();
+    } else if (window.close) {
+      window.close();
+    }
+  };
+</script>
+<script>
+  // Add minimize button handler (requires Electron or similar)
+  document.getElementById('minimize-btn').onclick = function () {
+    circularMenu = document.getElementById('circular-menu');
+    if (circularMenu.classList.contains('visible')) {
+      circularMenu.classList.remove('visible');
+    } else {
+      circularMenu.classList.add('visible');
+    }
+  };
+</script>
+
 </html>
