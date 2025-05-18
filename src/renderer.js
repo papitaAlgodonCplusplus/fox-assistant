@@ -3,30 +3,43 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Fox } from './fox';
 import { SpeechHandler } from './speech.js';
 import { ChatGPTHandler } from './chatgpt.js'; 
+import { ipcRenderer } from 'electron';
+
+// Track if the window is being dragged
+let isDragging = false;
+let dragOffset = { x: 0, y: 0 };
 
 // Initialize Three.js scene
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xf0f0f0);
+scene.background = null; // Transparent background
 
 // Camera
 const camera = new THREE.PerspectiveCamera(
   45, window.innerWidth / window.innerHeight, 0.1, 1000
 );
-camera.position.set(0, 1, 5);
+camera.position.set(0, 35, 105);
+camera.lookAt(0, 2, 0);
 
-// Renderer
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+// Renderer with alpha (transparency)
+const renderer = new THREE.WebGLRenderer({ 
+  antialias: true,
+  antialias: true,
+  alpha: true,  // Enable transparency
+  premultipliedAlpha: false // Fix transparency issues
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0); // Transparent background
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// Controls
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.05;
+// Disable OrbitControls for the desktop assistant
+// Instead, we'll handle dragging manually
+// const controls = new OrbitControls(camera, renderer.domElement);
+// controls.enableDamping = true;
+// controls.dampingFactor = 0.05;
 
 // Lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
 scene.add(ambientLight);
 
 const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -99,7 +112,7 @@ async function populateVoiceDropdown() {
       voiceSelect.appendChild(option);
     });
 
-    // Set default voice to 'alloy'
+    // Set default voice to 'ballad'
     const defaultVoice = voices.find(v => v.name === 'ballad') || voices[0];
     if (defaultVoice) {
       voiceSelect.value = defaultVoice.name;
@@ -118,6 +131,65 @@ async function populateVoiceDropdown() {
 // Initialize ChatGPT handler
 const chatGPT = new ChatGPTHandler();
 
+// Make window draggable (for frameless window)
+function setupDraggable() {
+  const dragRegion = document.getElementById('drag-region');
+  
+  dragRegion.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    dragOffset.x = e.clientX;
+    dragOffset.y = e.clientY;
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      ipcRenderer.send('window-move', { 
+        mouseX: e.clientX - dragOffset.x, 
+        mouseY: e.clientY - dragOffset.y 
+      });
+    }
+  });
+  
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+  });
+}
+
+// Setup context menu
+function setupContextMenu() {
+  const contextMenuButtons = document.querySelectorAll('.context-menu-button');
+  
+  contextMenuButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+      const action = e.target.dataset.action;
+      
+      switch (action) {
+        case 'minimize':
+          ipcRenderer.send('minimize-to-tray');
+          break;
+        case 'settings':
+          toggleSettingsPanel();
+          break;
+        case 'quit':
+          window.close();
+          break;
+      }
+    });
+  });
+}
+
+// Toggle settings panel
+function toggleSettingsPanel() {
+  const settingsPanel = document.getElementById('settings');
+  settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
+}
+
+// Toggle UI visibility
+function toggleUI() {
+  const uiContainer = document.getElementById('ui-container');
+  uiContainer.classList.toggle('hidden');
+}
+
 // UI Event Handlers when DOM is loaded
 window.addEventListener('DOMContentLoaded', () => {
   const textModeBtn = document.getElementById('text-mode-btn');
@@ -128,6 +200,13 @@ window.addEventListener('DOMContentLoaded', () => {
   const stopVoiceBtn = document.getElementById('stop-voice-btn');
   const textInput = document.getElementById('text-input');
   const sendTextBtn = document.getElementById('send-text-btn');
+  const toggleUIBtn = document.getElementById('toggle-ui-btn');
+  
+  // Setup draggable window
+  setupDraggable();
+  
+  // Setup context menu
+  setupContextMenu();
   
   // Show text input
   textModeBtn.addEventListener('click', () => {
@@ -160,6 +239,9 @@ window.addEventListener('DOMContentLoaded', () => {
     startVoiceBtn.classList.remove('active-button');
     stopVoiceBtn.classList.add('active-button');
   });
+  
+  // Toggle UI visibility
+  toggleUIBtn.addEventListener('click', toggleUI);
   
   // Send text message
   sendTextBtn.addEventListener('click', sendTextMessage);
@@ -198,12 +280,15 @@ window.addEventListener('DOMContentLoaded', () => {
   populateVoiceDropdown();
   
   // Handle API key updates
-  apiKeyInput.addEventListener('change', () => {
-    const apiKey = apiKeyInput.value.trim();
-    if (apiKey) {
-      process.env.OPENAI_API_KEY = apiKey;
-    }
-  });
+  const apiKeyInput = document.getElementById('api-key-input');
+  if (apiKeyInput) {
+    apiKeyInput.addEventListener('change', () => {
+      const apiKey = apiKeyInput.value.trim();
+      if (apiKey) {
+        process.env.OPENAI_API_KEY = apiKey;
+      }
+    });
+  }
 });
 
 // Animation loop
@@ -214,7 +299,9 @@ function animate() {
 
   const delta = clock.getDelta();
   fox.update(delta);
-  controls.update();
+  
+  // Update controls only if they exist
+  // if (controls) controls.update();
 
   renderer.render(scene, camera);
 }

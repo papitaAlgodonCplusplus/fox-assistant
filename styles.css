@@ -1,0 +1,224 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    background: transparent;
+}
+
+/* Make the main content area draggable */
+#drag-region {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    -webkit-app-region: no-drag;
+    z-index: 9999;
+    pointer-events: none;
+    /* Allows custom drag handling */
+    cursor: move;
+}
+
+#ui-container {
+    position: absolute;
+    bottom: 0px;
+    left: 0;
+    width: 100%;
+    padding: 10px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    z-index: 100;
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+#ui-container.hidden {
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+}
+
+#status {
+    font-weight: bold;
+    padding: 5px;
+    text-align: center;
+    font-size: 14px;
+}
+
+#conversation {
+    padding: 5px;
+    max-height: 100px;
+    max-width: 270px;
+    overflow-y: auto;
+    margin-top: 5px;
+    font-size: 12px;
+}
+
+.message {
+    margin-bottom: 5px;
+    padding: 3px;
+    border-radius: 3px;
+}
+
+.user {
+    background-color: rgba(100, 100, 255, 0.5);
+}
+
+.assistant {
+    background-color: rgba(100, 255, 100, 0.5);
+}
+
+#settings {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    border-radius: 5px;
+    color: white;
+    display: none;
+    z-index: 200;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+select,
+button {
+    padding: 5px 8px;
+    margin: 3px 0;
+    border-radius: 4px;
+    border: none;
+    background-color: #4a86e8;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: #3a76d8;
+}
+
+#input-mode-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 5px;
+}
+
+#input-mode-container button {
+    margin: 0 3px;
+    flex: 1;
+    max-width: 100px;
+}
+
+#text-input-container {
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+#voice-input-container {
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+#text-input {
+    padding: 5px;
+    width: 70%;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    margin-right: 3px;
+    font-size: 12px;
+}
+
+.active-button {
+    background-color: #2d5bb9 !important;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+#api-key-container {
+    margin-top: 5px;
+}
+
+#api-key-input {
+    width: 100%;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    margin-top: 3px;
+    font-size: 12px;
+}
+
+/* Control buttons */
+#control-buttons {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 150;
+    display: flex;
+}
+
+.control-button {
+    width: 30px;
+    height: 30px;
+    margin: 0 3px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.control-button:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+}
+
+/* Context menu */
+#context-menu {
+    display: none;
+    position: absolute;
+    background-color: rgba(30, 30, 30, 0.9);
+    border-radius: 5px;
+    padding: 5px 0;
+    min-width: 120px;
+    z-index: 1000;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.2s ease;
+}
+
+.context-menu-item {
+    padding: 5px 15px;
+    cursor: pointer;
+    color: white;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+.context-menu-item:hover {
+    background-color: rgba(80, 80, 80, 0.9);
+}
+
+.separator {
+    height: 1px;
+    background-color: #555;
+    margin: 5px 0;
+}
