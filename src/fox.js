@@ -17,21 +17,59 @@ export class Fox {
   }
 
   loadModel() {
-    const loader = new FBXLoader();
-    loader.load('assets/models/taidum.fbx', (fbx) => {
-      this.model = fbx;
-      this.model.scale.set(0.05, 0.05, 0.05); // Adjust scale as needed
-      this.model.position.set(0, 0, 0);
-      this.scene.add(this.model);
+    // Create a texture loader
+    const textureLoader = new THREE.TextureLoader();
+    
+    // Load the texture first
+    textureLoader.load('assets/textures/taidum.png', (texture) => {
+      console.log('Texture loaded successfully');
       
-      // Setup animations
-      this.mixer = new THREE.AnimationMixer(this.model);
-      
-      // Load animations
-      this.loadAnimation('idle', 'assets/animations/idle.fbx');
-      this.loadAnimation('listening', 'assets/animations/listening.fbx');
-      this.loadAnimation('thinking', 'assets/animations/thinking.fbx');
-      this.loadAnimation('speaking', 'assets/animations/speaking.fbx');
+      // Once texture is loaded, load the model
+      const loader = new FBXLoader();
+      loader.load('assets/models/taidum.fbx', (fbx) => {
+        this.model = fbx;
+        this.model.scale.set(0.05, 0.05, 0.05); // Adjust scale as needed
+        this.model.position.set(0, 0, 0);
+        
+        // Apply texture to the model
+        this.model.traverse((child) => {
+          // Check if this child is a mesh
+          if (child.isMesh) {
+            // Clone the existing material
+            const material = child.material.clone();
+            
+            // Apply the texture to the material
+            material.map = texture;
+            material.needsUpdate = true;
+            
+            // Assign the new material back to the mesh
+            child.material = material;
+            
+            // Enable shadows
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        
+        this.scene.add(this.model);
+        
+        // Setup animations
+        this.mixer = new THREE.AnimationMixer(this.model);
+        
+        // Load animations
+        this.loadAnimation('idle', 'assets/animations/idle.fbx');
+        this.loadAnimation('listening', 'assets/animations/listening.fbx');
+        this.loadAnimation('thinking', 'assets/animations/thinking.fbx');
+        this.loadAnimation('speaking', 'assets/animations/speaking.fbx');
+      });
+    }, 
+    // Progress callback
+    (xhr) => {
+      console.log((xhr.loaded / xhr.total * 100) + '% texture loaded');
+    },
+    // Error callback
+    (error) => {
+      console.error('Error loading texture:', error);
     });
   }
 
