@@ -18,7 +18,7 @@ export class SpeechHandler {
     this.tempDir = path.join(os.tmpdir(), 'fox-assistant');
     this.apiKey = process.env.OPENAI_API_KEY;
     this.audioElement = new Audio();
-    this.selectedVoice = 'ballad'; // Default to alloy voice
+    this.selectedVoice = 'ash'; // Default to alloy voice
 
     // Create temp directory if it doesn't exist
     if (!fs.existsSync(this.tempDir)) {
@@ -359,7 +359,7 @@ export class SpeechHandler {
     const voices = [
       { name: 'alloy', lang: 'en-US' },
       { name: 'ash', lang: 'en-US' },
-      { name: 'ballad', lang: 'en-US' },
+      { name: 'ash', lang: 'en-US' },
       { name: 'coral', lang: 'en-US' },
       { name: 'echo', lang: 'en-US' },
       { name: 'fable', lang: 'en-US' },

@@ -7,6 +7,29 @@
 </head>
 
 <body>
+
+  <!-- Main UI container -->
+  <div id="ui-container" class="hidden">
+    <div id="conversation">
+      <div class="message user" id="user-input"></div>
+      <div class="message assistant" id="ai-response"></div>
+    </div>
+
+    <div id="status">Choose input method</div>
+
+    <!-- Text input container -->
+    <div id="text-input-container">
+      <input type="text" id="text-input" placeholder="Type your message here...">
+      <button id="send-text-btn">Send</button>
+    </div>
+
+    <!-- Voice input container -->
+    <div id="voice-input-container">
+      <button id="start-voice-btn">Start</button>
+      <button id="stop-voice-btn">Stop</button>
+    </div>
+  </div>
+
   <!-- Fox clickable area -->
   <div id="fox-clickable-area"></div>
 
@@ -33,28 +56,6 @@
     <div id="api-key-container">
       <label for="api-key-input">OpenAI API Key:</label>
       <input type="password" id="api-key-input" placeholder="sk-...">
-    </div>
-  </div>
-
-  <!-- Main UI container -->
-  <div id="ui-container" class="hidden">
-    <div id="conversation">
-      <div class="message user" id="user-input"></div>
-      <div class="message assistant" id="ai-response"></div>
-    </div>
-
-    <div id="status">Choose input method</div>
-
-    <!-- Text input container -->
-    <div id="text-input-container">
-      <input type="text" id="text-input" placeholder="Type your message here...">
-      <button id="send-text-btn">Send</button>
-    </div>
-
-    <!-- Voice input container -->
-    <div id="voice-input-container">
-      <button id="start-voice-btn">Start</button>
-      <button id="stop-voice-btn">Stop</button>
     </div>
   </div>
 

@@ -28,10 +28,10 @@ export class Fox {
       const loader = new FBXLoader();
       loader.load('assets/models/taidum.fbx', (fbx) => {
         this.model = fbx;
-        this.model.scale.set(0.04, 0.04, 0.04); // Adjust scale for floating assistant
+        this.model.scale.set(0.035, 0.035, 0.035); // Adjust scale for floating assistant
         
         // Center the model in the window
-        this.model.position.set(0, 0, 0);
+        this.model.position.set(0, -1, 0);
         
         // Apply texture to the model
         this.model.traverse((child) => {

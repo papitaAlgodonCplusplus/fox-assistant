@@ -8,7 +8,7 @@ body {
 /* Make the fox area clickable */
 #fox-clickable-area {
     position: absolute;
-    top: 0;
+    top: 100px;
     left: 0;
     width: 100%;
     height: 100%;
@@ -22,8 +22,8 @@ body {
     top: 38%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 200px;
-    height: 200px;
+    width: 250px;
+    height: 250px;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -61,7 +61,7 @@ body {
 /* UI container for text/voice input */
 #ui-container {
     position: absolute;
-    bottom: 10px;
+    top: 0px;
     left: 50%;
     transform: translateX(-50%);
     width: 90%;

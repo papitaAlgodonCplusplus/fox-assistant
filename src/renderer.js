@@ -13,7 +13,7 @@ scene.background = null; // Transparent background
 const camera = new THREE.PerspectiveCamera(
   45, window.innerWidth / window.innerHeight, 0.1, 1000
 );
-camera.position.set(0, 35, 105);
+camera.position.set(20, 35, 105);
 camera.lookAt(0, 2, 0);
 
 // Renderer with alpha (transparency)
@@ -101,8 +101,8 @@ async function populateVoiceDropdown() {
       voiceSelect.appendChild(option);
     });
 
-    // Set default voice to 'ballad'
-    const defaultVoice = voices.find(v => v.name === 'ballad') || voices[0];
+    // Set default voice to 'ash'
+    const defaultVoice = voices.find(v => v.name === 'ash') || voices[0];
     if (defaultVoice) {
       voiceSelect.value = defaultVoice.name;
       speechHandler.setVoice(defaultVoice.name);
