@@ -21,8 +21,8 @@ function createWindow() {
   const { width, height } = primaryDisplay.workAreaSize;
 
   mainWindow = new BrowserWindow({
-    width: 200,
-    height: 700,
+    width: 240,
+    height: 500,
     title: '',
     transparent: true,
     frame: false,
@@ -39,7 +39,7 @@ function createWindow() {
   });
 
   // Position at bottom right by default
-  mainWindow.setPosition(width - 200, height - 350);
+  mainWindow.setPosition(width - 240, height - 500);
 
   // Load the index.html of the app
   mainWindow.loadFile('index.html');

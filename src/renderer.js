@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Fox } from './fox';
 import { SpeechHandler } from './speech.js';
 import { ChatGPTHandler } from './chatgpt.js';
@@ -13,8 +12,9 @@ scene.background = null; // Transparent background
 const camera = new THREE.PerspectiveCamera(
   45, window.innerWidth / window.innerHeight, 0.1, 1000
 );
-camera.position.set(20, 35, 105);
-camera.lookAt(0, 2, 0);
+// Position camera more conservatively - similar to original working settings
+camera.position.set(0, 0, 20);
+camera.lookAt(0, 0, 0);
 
 // Renderer with alpha (transparency)
 const renderer = new THREE.WebGLRenderer({
@@ -25,19 +25,222 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x000000, 0); // Transparent background
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
 document.body.appendChild(renderer.domElement);
 
-// Lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-scene.add(ambientLight);
+// Futuristic lighting setup
+const setupLighting = () => {
+  // Clear existing lights
+  scene.children.forEach(child => {
+    if (child.isLight) scene.remove(child);
+  });
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-directionalLight.position.set(5, 10, 7.5);
-directionalLight.castShadow = true;
-scene.add(directionalLight);
+  // Ambient light - softer base light
+  const ambientLight = new THREE.AmbientLight(0x111122, 0.4);
+  scene.add(ambientLight);
+
+  // Main directional light
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  directionalLight.position.set(5, 10, 7.5);
+  directionalLight.castShadow = true;
+  directionalLight.shadow.mapSize.width = 1024;
+  directionalLight.shadow.mapSize.height = 1024;
+  directionalLight.shadow.camera.near = 0.5;
+  directionalLight.shadow.camera.far = 50;
+  directionalLight.shadow.bias = -0.0005;
+  scene.add(directionalLight);
+
+  // Neon spot lights for futuristic effect
+  const createSpotlight = (color, intensity, position, angle = Math.PI/6) => {
+    const spotlight = new THREE.SpotLight(color, intensity);
+    spotlight.position.set(...position);
+    spotlight.angle = angle;
+    spotlight.penumbra = 0.2;
+    spotlight.decay = 1.5;
+    spotlight.distance = 100;
+    spotlight.castShadow = true;
+    spotlight.shadow.mapSize.width = 512;
+    spotlight.shadow.mapSize.height = 512;
+    scene.add(spotlight);
+    
+    // Add subtle flicker animation
+    return spotlight;
+  };
+
+  const spotlights = [
+    createSpotlight(0x00f0ff, 2.5, [-3.5, 5, 3.5]),   // Cyan
+    createSpotlight(0xff00cc, 2.5, [3.5, 4, 1.5]),    // Pink
+    createSpotlight(0x00ff9d, 2.5, [1.5, 5, -2.5]),   // Green
+    createSpotlight(0xffee00, 1.5, [-1.5, 2.5, 5])    // Yellow
+  ];
+
+  // Add subtle animation for the spotlights
+  spotlights.forEach(light => {
+    // Store original values for animation
+    light.userData = {
+      originalIntensity: light.intensity,
+      originalPosition: light.position.clone(),
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.5 + Math.random() * 0.5
+    };
+  });
+
+  return spotlights;
+};
+
+// Add fog for atmosphere
+scene.fog = new THREE.FogExp2(0x000020, 0.0025);
+
+// Create neon glowing ground plane
+const createGlowingGround = () => {
+  const planeGeometry = new THREE.PlaneGeometry(80, 80, 32, 32);
+  const planeMaterial = new THREE.MeshStandardMaterial({
+    color: 0x101030,
+    metalness: 0.8,
+    roughness: 0.5,
+    emissive: 0x101020,
+    emissiveIntensity: 0.2
+  });
+  
+  const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+  plane.rotation.x = -Math.PI / 2;
+  plane.position.y = -5;
+  plane.receiveShadow = true;
+  scene.add(plane);
+
+  // Add grid lines for futuristic effect
+  const gridHelper = new THREE.GridHelper(80, 40, 0x00ffff, 0x00ffff);
+  gridHelper.position.y = -4.9;
+  gridHelper.material.opacity = 0.15;
+  gridHelper.material.transparent = true;
+  scene.add(gridHelper);
+
+  return { plane, gridHelper };
+};
+
+// Add particle system for atmosphere
+const createParticles = () => {
+  const particleCount = 1000;
+  const particles = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+  const colors = new Float32Array(particleCount * 3);
+  
+  const colorOptions = [
+    new THREE.Color(0x00f0ff), // Cyan
+    new THREE.Color(0xff00cc), // Pink
+    new THREE.Color(0x00ff9d), // Green
+    new THREE.Color(0xffee00)  // Yellow
+  ];
+
+  for (let i = 0; i < particleCount; i++) {
+    // Position
+    const x = (Math.random() - 0.5) * 100;
+    const y = Math.random() * 50;
+    const z = (Math.random() - 0.5) * 100;
+    
+    positions[i * 3] = x;
+    positions[i * 3 + 1] = y;
+    positions[i * 3 + 2] = z;
+    
+    // Color
+    const color = colorOptions[Math.floor(Math.random() * colorOptions.length)];
+    colors[i * 3] = color.r;
+    colors[i * 3 + 1] = color.g;
+    colors[i * 3 + 2] = color.b;
+  }
+  
+  particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  
+  const particleMaterial = new THREE.PointsMaterial({
+    size: 0.5,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.6,
+    sizeAttenuation: true
+  });
+  
+  const particleSystem = new THREE.Points(particles, particleMaterial);
+  scene.add(particleSystem);
+  
+  return particleSystem;
+};
+
+// Create background elements for neon scenery
+const createBackgroundElements = () => {
+  // Add some floating neon cubes in the background
+  const cubes = [];
+  
+  const createNeonCube = (size, position, color) => {
+    const geometry = new THREE.BoxGeometry(size, size, size);
+    const material = new THREE.MeshStandardMaterial({
+      color: color,
+      metalness: 0.9,
+      roughness: 0.3,
+      emissive: color,
+      emissiveIntensity: 0.5,
+      transparent: true,
+      opacity: 0.7
+    });
+    
+    const cube = new THREE.Mesh(geometry, material);
+    cube.position.set(...position);
+    cube.castShadow = true;
+    cube.receiveShadow = true;
+    
+    // Add subtle glow effect
+    const glowMaterial = new THREE.MeshBasicMaterial({
+      color: color,
+      transparent: true,
+      opacity: 0.15,
+      side: THREE.BackSide
+    });
+    
+    const glowMesh = new THREE.Mesh(new THREE.BoxGeometry(size * 1.2, size * 1.2, size * 1.2), glowMaterial);
+    cube.add(glowMesh);
+    
+    scene.add(cube);
+    
+    // Store animation data
+    cube.userData = {
+      rotationSpeed: {
+        x: (Math.random() - 0.5) * 0.01,
+        y: (Math.random() - 0.5) * 0.01,
+        z: (Math.random() - 0.5) * 0.01
+      },
+      floatSpeed: 0.3 + Math.random() * 0.5,
+      floatHeight: Math.random() * 0.5,
+      startY: position[1],
+      phase: Math.random() * Math.PI * 2
+    };
+    
+    return cube;
+  };
+  
+  // Add several neon cubes at different positions
+  cubes.push(createNeonCube(3, [-20, 10, -25], 0x00f0ff)); // Cyan
+  cubes.push(createNeonCube(2, [25, 8, -15], 0xff00cc));   // Pink
+  cubes.push(createNeonCube(4, [-15, 15, -40], 0x00ff9d)); // Green
+  cubes.push(createNeonCube(2.5, [30, 12, -30], 0xffee00)); // Yellow
+  
+  return cubes;
+};
+
+// Create futuristic background elements
+const ground = createGlowingGround();
+const particles = createParticles();
+const spotlights = setupLighting();
+const backgroundElements = createBackgroundElements();
 
 // Initialize fox
+console.log('Initializing fox...');
 const fox = new Fox(scene);
+
+// Debug info - print all scene objects to help troubleshoot
+console.log('Scene contents:');
+scene.traverse(object => {
+  console.log(object.type, object.name, object.position);
+});
 
 // Initialize speech handler
 const speechHandler = new SpeechHandler(
@@ -139,8 +342,8 @@ function setupCircularMenu() {
     const y = radius * Math.sin(angle);
 
     // Position the button
-    button.style.left = `calc(50% + ${x}px - 20px)`;
-    button.style.top = `calc(50% + ${y}px - 20px)`;
+    button.style.left = `calc(50% + ${x}px - 22.5px)`;
+    button.style.top = `calc(50% + ${y}px - 22.5px)`;
 
     // Add tooltip functionality
     const tooltip = document.getElementById('tooltip');
@@ -213,8 +416,19 @@ function setupDraggable() {
   });
 }
 
+// Add Google font for futuristic look
+function addFuturisticFont() {
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap';
+  document.head.appendChild(link);
+}
+
 // UI Event Handlers when DOM is loaded
 window.addEventListener('DOMContentLoaded', async () => {
+  // Add futuristic font
+  addFuturisticFont();
+  
   // Setup circular menu
   setupCircularMenu();
 
@@ -356,8 +570,63 @@ function animate() {
   requestAnimationFrame(animate);
 
   const delta = clock.getDelta();
+  const elapsedTime = clock.getElapsedTime();
+  
+  // Update fox model
   fox.update(delta);
-
+  
+  // Animate neon lighting effects
+  if (spotlights) {
+    spotlights.forEach(light => {
+      const userData = light.userData;
+      // Subtle intensity flicker
+      light.intensity = userData.originalIntensity * (0.9 + 0.2 * Math.sin(elapsedTime * userData.speed + userData.phase));
+      
+      // Subtle position movement
+      const posX = userData.originalPosition.x + Math.sin(elapsedTime * 0.5 + userData.phase) * 2;
+      const posY = userData.originalPosition.y + Math.sin(elapsedTime * 0.3 + userData.phase) * 1;
+      const posZ = userData.originalPosition.z + Math.cos(elapsedTime * 0.4 + userData.phase) * 2;
+      
+      light.position.set(posX, posY, posZ);
+    });
+  }
+  
+  // Animate particle system
+  if (particles) {
+    particles.rotation.y = elapsedTime * 0.05;
+    
+    // Make particles twinkle
+    if (particles.material.opacity > 0.4 && particles.material.opacity < 0.8) {
+      particles.material.opacity = 0.4 + Math.sin(elapsedTime * 0.5) * 0.2;
+    }
+  }
+  
+  // Animate grid lines with wave effect
+  if (ground && ground.gridHelper) {
+    ground.gridHelper.position.y = -4.9 + Math.sin(elapsedTime * 0.5) * 0.1;
+  }
+  
+  // Animate background cubes
+  if (backgroundElements) {
+    backgroundElements.forEach(cube => {
+      const userData = cube.userData;
+      
+      // Rotation
+      cube.rotation.x += userData.rotationSpeed.x;
+      cube.rotation.y += userData.rotationSpeed.y;
+      cube.rotation.z += userData.rotationSpeed.z;
+      
+      // Floating effect
+      cube.position.y = userData.startY + Math.sin(elapsedTime * userData.floatSpeed + userData.phase) * userData.floatHeight;
+      
+      // Pulsing glow effect on the child glow mesh
+      if (cube.children[0]) {
+        cube.children[0].material.opacity = 0.1 + Math.sin(elapsedTime * 2 + userData.phase) * 0.05;
+        cube.children[0].scale.setScalar(1.2 + Math.sin(elapsedTime * 1.5 + userData.phase) * 0.05);
+      }
+    });
+  }
+  
   renderer.render(scene, camera);
 }
 
