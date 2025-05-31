@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const axios = require('axios');
+const { exec } = require('child_process');
 
 // Coqui TTS-only speech handler for Fox Assistant
 export class SpeechHandler {
@@ -310,6 +311,7 @@ export class SpeechHandler {
 
       // Generate speech using Coqui TTS
       const audioData = await this.generateCoquiSpeech(text);
+      console.log('🎵 Audio data received from Coqui TTS');
 
       if (audioData) {
         await this.saveAudioLocally(audioData, 'out.wav');
@@ -508,40 +510,35 @@ export class SpeechHandler {
     });
   }
 
+
   async generateCoquiSpeech(text) {
-    try {
-      console.log('🎯 Sending request to Coqui TTS API...');
+    const modelName = "tts_models/multilingual/multi-dataset/xtts_v2";
+    const speakerWav = "C:\\Users\\AlexQQ\\Desktop\\fox-assistant\\coqui-models\\speaker.wav";
+    const languageIdx = "en";
+    const outPath = "C:\\Users\\AlexQQ\\Desktop\\fox-assistant\\output.wav";
 
-      // Create FormData for the multi-speaker XTTS model
-      const formData = new FormData();
-      formData.append('text', text);
-      formData.append('language', this.voiceLanguage || 'en');
-      formData.append('speaker_id', 'male');
+    // Escape any quotes in the input text
+    const safeText = text.replace(/"/g, '\\"');
+    const command = `tts --text "${safeText}" --model_name "${modelName}" --speaker_wav "${speakerWav}" --language_idx "${languageIdx}" --out_path "${outPath}"`;
 
-      // Debug: Log what we're sending
-      console.log('🔍 FormData contents:');
-      for (let [key, value] of formData.entries()) {
-        console.log(`  ${key}: ${value}`);
-      }
+    return new Promise((resolve, reject) => {
+      exec(command, async (error, stdout, stderr) => {
+        if (error) {
+          console.error("TTS generation failed:", stderr);
+          return reject(error);
+        }
 
-      console.log('📤 Sending request with text:', text.substring(0, 50) + '...');
-
-      const response = await axios.post('http://localhost:5002/api/tts', formData, {
-        responseType: 'arraybuffer',
-        timeout: 30000,
+        try {
+          console.log("TTS generation completed successfully:", stdout);
+          const audioData = await fs.readFile(outPath);
+          console.log("Output audio file read successfully: ", outPath);
+          resolve(audioData);
+        } catch (readError) {
+          console.error("Failed to read output audio file:", readError);
+          reject(readError);
+        }
       });
-
-      console.log('📥 Received audio data from Coqui TTS');
-      return response.data;
-
-    } catch (error) {
-      console.error('❌ Error calling Coqui TTS API:', error);
-
-      if (error.response) {
-        console.error('📋 API response status:', error.response.status);
-        console.error('📋 API response data:', new TextDecoder().decode(error.response.data));
-      }
-    }
+    });
   }
 
   // Play audio data
