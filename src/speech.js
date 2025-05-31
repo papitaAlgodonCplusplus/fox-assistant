@@ -516,7 +516,7 @@ export class SpeechHandler {
       const formData = new FormData();
       formData.append('text', text);
       formData.append('language', this.voiceLanguage || 'en');
-      formData.append('speaker_idx', '0');
+      formData.append('speaker_id', 'male');
 
       // Debug: Log what we're sending
       console.log('🔍 FormData contents:');
@@ -541,139 +541,6 @@ export class SpeechHandler {
         console.error('📋 API response status:', error.response.status);
         console.error('📋 API response data:', new TextDecoder().decode(error.response.data));
       }
-
-      // Fallback to CLI method
-      console.log('🔄 Trying CLI method as fallback...');
-      return await this.generateCoquiSpeechCLI(text);
-    }
-  }
-
-  // Try different speaker indices to find one that works
-  async tryDifferentSpeakers(text) {
-    const speakerIndices = ['0', '1', '2', 'female', 'male'];
-
-    for (const speakerIdx of speakerIndices) {
-      try {
-        console.log(`🎤 Trying speaker index: ${speakerIdx}`);
-
-        const formData = new FormData();
-        formData.append('text', text);
-        formData.append('language', this.voiceLanguage || 'en');
-        formData.append('speaker_idx', speakerIdx);
-
-        const response = await axios.post(`${this.coquiServerUrl}/api/tts`, formData, {
-          responseType: 'arraybuffer',
-          timeout: 15000
-        });
-
-        console.log(`✅ Success with speaker index: ${speakerIdx}`);
-        return response.data;
-
-      } catch (error) {
-        console.log(`❌ Speaker index ${speakerIdx} failed`);
-        continue;
-      }
-    }
-
-    throw new Error('All speaker indices failed');
-  }
-
-  // Also update the CLI method to handle missing speaker WAV
-  async generateCoquiSpeechCLI(text) {
-    return new Promise((resolve, reject) => {
-      const outputPath = path.join(this.tempDir, `speech_${Date.now()}.wav`);
-
-      const coquiArgs = [
-        '--text', text,
-        '--model_name', this.modelName,
-        '--out_path', outputPath,
-        '--language', this.voiceLanguage
-      ];
-
-      // Only add speaker_wav if file exists
-      if (this.speakerWavPath && fs.existsSync(this.speakerWavPath)) {
-        coquiArgs.push('--speaker_wav', this.speakerWavPath);
-        console.log('🎤 Using speaker WAV file for CLI generation');
-      } else {
-        console.log('📢 Using default voice for CLI generation');
-      }
-
-      console.log('🔧 Running Coqui TTS CLI:', 'tts', coquiArgs.join(' '));
-
-      const ttsProcess = spawn('tts', coquiArgs, {
-        stdio: ['ignore', 'pipe', 'pipe']
-      });
-
-      let stderr = '';
-      let stdout = '';
-
-      ttsProcess.stdout.on('data', (data) => {
-        stdout += data.toString();
-      });
-
-      ttsProcess.stderr.on('data', (data) => {
-        stderr += data.toString();
-      });
-
-      ttsProcess.on('close', (code) => {
-        console.log('📋 TTS CLI output:', stdout);
-        if (stderr) console.warn('⚠️ TTS CLI errors:', stderr);
-
-        if (code === 0 && fs.existsSync(outputPath)) {
-          // Read the generated audio file
-          const audioData = fs.readFileSync(outputPath);
-
-          // Clean up the temporary file
-          fs.unlinkSync(outputPath);
-
-          console.log('✅ Coqui TTS CLI generation completed');
-          resolve(audioData);
-        } else {
-          console.error('❌ Coqui TTS CLI process failed with code:', code);
-          reject(new Error(`TTS CLI process failed with code ${code}: ${stderr}`));
-        }
-      });
-
-      ttsProcess.on('error', (error) => {
-        console.error('❌ Error spawning Coqui TTS CLI process:', error);
-        reject(error);
-      });
-    });
-  }
-
-  // Alternative JSON format method
-  async generateCoquiSpeechJSON(text) {
-    try {
-      console.log('🎯 Trying JSON format for Coqui TTS API...');
-
-      // Try with simple JSON payload
-      const requestData = {
-        text: text,
-        language: this.voiceLanguage,
-        stream: false
-      };
-
-      // Only add speaker_wav path if it exists
-      if (this.speakerWavPath && fs.existsSync(this.speakerWavPath)) {
-        requestData.speaker_wav = this.speakerWavPath;
-      }
-
-      console.log('📤 JSON Request data:', requestData);
-
-      const response = await axios.post(`${this.coquiServerUrl}/api/tts`, requestData, {
-        responseType: 'arraybuffer',
-        timeout: 30000
-      });
-
-      console.log('📥 Received audio data from Coqui TTS (JSON)');
-      return response.data;
-
-    } catch (error) {
-      console.error('❌ JSON format also failed:', error);
-
-      // Final fallback to CLI method
-      console.log('🔄 Falling back to CLI method...');
-      return await this.generateCoquiSpeechCLI(text);
     }
   }
 
@@ -705,65 +572,6 @@ export class SpeechHandler {
     });
   }
 
-  // Get available Coqui voices (cloned voices from WAV files)
-  getAvailableVoices() {
-    console.log('🎤 Loading available Coqui TTS voices...');
-
-    const voices = [];
-
-    // Add default cloned voice
-    if (fs.existsSync(this.speakerWavPath)) {
-      voices.push({
-        name: 'Default Cloned Voice',
-        path: this.speakerWavPath,
-        lang: this.voiceLanguage,
-        type: 'coqui-cloned'
-      });
-    }
-
-    // Scan coqui-models directory for additional WAV files
-    try {
-      if (fs.existsSync(this.coquiModelPath)) {
-        const files = fs.readdirSync(this.coquiModelPath);
-
-        files.forEach(file => {
-          if (file.endsWith('.wav') && file !== 'speaker.wav') {
-            const voiceName = file.replace('.wav', '').replace(/[_-]/g, ' ');
-            const capitalizedName = voiceName.charAt(0).toUpperCase() + voiceName.slice(1);
-
-            voices.push({
-              name: capitalizedName,
-              path: path.join(this.coquiModelPath, file),
-              lang: this.voiceLanguage,
-              type: 'coqui-cloned'
-            });
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Error scanning coqui-models directory:', error);
-    }
-
-    // If no voices found, add a placeholder
-    if (voices.length === 0) {
-      voices.push({
-        name: 'No Cloned Voice (Please add speaker.wav)',
-        path: this.speakerWavPath,
-        lang: this.voiceLanguage,
-        type: 'coqui-placeholder'
-      });
-    }
-
-    console.log('🎯 Available Coqui voices:', voices.map(v => v.name));
-    return Promise.resolve(voices);
-  }
-
-  // Set the selected voice (speaker WAV file)
-  setVoice(voicePath) {
-    this.speakerWavPath = voicePath;
-    console.log('🎤 Selected Coqui voice:', voicePath);
-  }
-
   // Set Coqui TTS server URL
   setCoquiServerUrl(url) {
     // Handle IPv6 conversion
@@ -791,12 +599,6 @@ export class SpeechHandler {
     console.log('🌍 Voice language set to:', language);
   }
 
-  // Set Coqui model name
-  setModelName(modelName) {
-    this.modelName = modelName;
-    console.log('🤖 Coqui model set to:', modelName);
-  }
-
   // Legacy method for compatibility (does nothing since we're Coqui-only)
   setCoquiTTS(enabled) {
     console.log('🦊 Fox Assistant is Coqui TTS exclusive - ignoring setCoquiTTS call');
@@ -809,117 +611,6 @@ export class SpeechHandler {
       this.serverProcess.kill('SIGTERM');
       this.serverProcess = null;
     }
-  }
-
-  // Get server status
-  async getServerStatus() {
-    const isRunning = await this.checkCoquiServer();
-    return {
-      running: isRunning,
-      url: this.coquiServerUrl,
-      modelName: this.modelName,
-      speakerWav: this.speakerWavPath,
-      language: this.voiceLanguage
-    };
-  }
-
-  // Test Coqui TTS with a sample phrase
-  async testCoquiTTS() {
-    const testPhrases = [
-      "Hello! I am Nicolas, your cloned fox assistant.",
-      "This is a test of the Coqui text-to-speech system.",
-      "My voice has been cloned using advanced AI technology.",
-      "I can speak in multiple languages with natural intonation."
-    ];
-
-    const randomPhrase = testPhrases[Math.floor(Math.random() * testPhrases.length)];
-    console.log('🧪 Testing Coqui TTS with phrase:', randomPhrase);
-
-    try {
-      await this.speak(randomPhrase);
-      return true;
-    } catch (error) {
-      console.error('❌ Coqui TTS test failed:', error);
-      return false;
-    }
-  }
-
-  // Check if all required files exist
-  validateSetup() {
-    const issues = [];
-
-    // Check if coqui-models directory exists
-    if (!fs.existsSync(this.coquiModelPath)) {
-      issues.push(`Coqui models directory missing: ${this.coquiModelPath}`);
-    }
-
-    // Check if speaker WAV file exists
-    if (!fs.existsSync(this.speakerWavPath)) {
-      issues.push(`Speaker WAV file missing: ${this.speakerWavPath}`);
-    }
-
-    // Check if temp directory exists
-    if (!fs.existsSync(this.tempDir)) {
-      issues.push(`Temp directory missing: ${this.tempDir}`);
-    }
-
-    if (issues.length === 0) {
-      console.log('✅ Coqui TTS setup validation passed');
-      return { valid: true, issues: [] };
-    } else {
-      console.warn('⚠️ Coqui TTS setup validation issues:', issues);
-      return { valid: false, issues };
-    }
-  }
-
-  // Create default speaker WAV file if missing
-  async createDefaultSpeakerWav() {
-    if (fs.existsSync(this.speakerWavPath)) {
-      console.log('✅ Speaker WAV file already exists');
-      return;
-    }
-
-    console.log('📝 Creating instructions for speaker WAV file...');
-
-    const instructionsPath = path.join(this.coquiModelPath, 'README.txt');
-    const instructions = `
-Fox Assistant - Coqui TTS Voice Cloning Setup
-=============================================
-
-To use voice cloning with your Fox Assistant, you need to provide a speaker audio sample.
-
-Required File: speaker.wav
-Location: ${this.speakerWavPath}
-
-Instructions:
-1. Record a clear audio sample of the voice you want to clone
-2. Duration: 10-30 seconds of natural speech
-3. Quality: Clean audio, minimal background noise
-4. Format: WAV file, 22kHz sample rate recommended
-5. Content: Natural conversation, varied intonation
-
-Example recording script:
-"Hello, I am Nicolas, your digital fox assistant. I'm here to help you with whatever you need. 
-I can answer questions, have conversations, and assist with various tasks. 
-My voice has been cloned using advanced artificial intelligence technology."
-
-Once you have your recording:
-1. Save it as "speaker.wav" in this directory
-2. Restart Fox Assistant
-3. Test the voice using the "Test Voice" button in settings
-
-For best results:
-- Use a high-quality microphone
-- Record in a quiet environment
-- Speak clearly and naturally
-- Include varied emotions and tones
-
-Supported audio formats for input: WAV, MP3, M4A, FLAC
-(Will be automatically converted to WAV format)
-`;
-
-    fs.writeFileSync(instructionsPath, instructions);
-    console.log('📋 Created setup instructions at:', instructionsPath);
   }
 
   // Fallback text display when TTS fails
@@ -962,41 +653,6 @@ Supported audio formats for input: WAV, MP3, M4A, FLAC
         }, 500);
       }, displayTime);
     });
-  }
-
-  // Cleanup method
-  cleanup() {
-    console.log('🧹 Cleaning up Coqui TTS Speech Handler...');
-
-    // Stop any ongoing audio
-    if (this.audioElement) {
-      this.audioElement.pause();
-      this.audioElement.src = '';
-    }
-
-    // Stop recording if active
-    if (this.isListening) {
-      this.stopListening();
-    }
-
-    // Stop server if we started it
-    this.stopCoquiServer();
-
-    // Clean up temp files
-    try {
-      if (fs.existsSync(this.tempDir)) {
-        const tempFiles = fs.readdirSync(this.tempDir);
-        tempFiles.forEach(file => {
-          if (file.startsWith('speech_') || file.startsWith('recording')) {
-            fs.unlinkSync(path.join(this.tempDir, file));
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Error cleaning up temp files:', error);
-    }
-
-    console.log('✅ Cleanup completed');
   }
 }
 
