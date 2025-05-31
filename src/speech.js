@@ -312,6 +312,7 @@ export class SpeechHandler {
       const audioData = await this.generateCoquiSpeech(text);
 
       if (audioData) {
+        await this.saveAudioLocally(audioData, 'out.wav');
         await this.playAudioData(audioData);
         console.log('✅ Coqui TTS speech completed successfully');
       } else {
@@ -321,6 +322,77 @@ export class SpeechHandler {
       console.error('❌ Coqui TTS error:', error);
       // Fallback to text display since we're Coqui-only
       await this.displayText(text);
+    }
+  }
+
+  // New method to save audio data locally
+  async saveAudioLocally(audioData, filename = 'out.wav') {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+
+      // Determine save location - you can modify this path as needed
+      const saveDirectory = process.cwd(); // Current working directory
+      const filePath = path.join(saveDirectory, filename);
+
+      // Convert ArrayBuffer to Buffer if needed
+      let buffer;
+      if (audioData instanceof ArrayBuffer) {
+        buffer = Buffer.from(audioData);
+      } else if (Buffer.isBuffer(audioData)) {
+        buffer = audioData;
+      } else {
+        // Handle Uint8Array or similar
+        buffer = Buffer.from(audioData);
+      }
+
+      // Write the audio data to file
+      fs.writeFileSync(filePath, buffer);
+
+      console.log(`💾 Audio saved locally as: ${filePath}`);
+      console.log(`📁 File size: ${(buffer.length / 1024).toFixed(2)} KB`);
+
+      return filePath;
+    } catch (error) {
+      console.error('❌ Error saving audio locally:', error);
+      throw error;
+    }
+  }
+
+  // Method to save to a specific directory
+  async saveAudioToDirectory(audioData, directory, filename = 'out.wav') {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+
+      // Ensure directory exists
+      if (!fs.existsSync(directory)) {
+        fs.mkdirSync(directory, { recursive: true });
+        console.log(`📁 Created directory: ${directory}`);
+      }
+
+      const filePath = path.join(directory, filename);
+
+      // Convert ArrayBuffer to Buffer if needed
+      let buffer;
+      if (audioData instanceof ArrayBuffer) {
+        buffer = Buffer.from(audioData);
+      } else if (Buffer.isBuffer(audioData)) {
+        buffer = audioData;
+      } else {
+        buffer = Buffer.from(audioData);
+      }
+
+      // Write the audio data to file
+      fs.writeFileSync(filePath, buffer);
+
+      console.log(`💾 Audio saved to: ${filePath}`);
+      console.log(`📁 File size: ${(buffer.length / 1024).toFixed(2)} KB`);
+
+      return filePath;
+    } catch (error) {
+      console.error('❌ Error saving audio to directory:', error);
+      throw error;
     }
   }
 
@@ -456,7 +528,6 @@ export class SpeechHandler {
 
       const response = await axios.post('http://localhost:5002/api/tts', formData, {
         responseType: 'arraybuffer',
-        headers: formData.getHeaders(), // This is *essential* for correct boundary
         timeout: 30000,
       });
 
@@ -591,9 +662,6 @@ export class SpeechHandler {
 
       const response = await axios.post(`${this.coquiServerUrl}/api/tts`, requestData, {
         responseType: 'arraybuffer',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         timeout: 30000
       });
 
