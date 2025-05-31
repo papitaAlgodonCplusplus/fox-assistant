@@ -10,7 +10,9 @@
     "package-mac": "electron-builder build --mac",
     "package-linux": "electron-builder build --linux",
     "dev": "npm run build && npm start",
-    "download-whisper": "npx nodejs-whisper download base.en"
+    "download-whisper": "npx nodejs-whisper download base.en",
+    "setup-coqui": "pip install coqui-tts",
+    "download-coqui-model": "tts --model_name tts_models/multilingual/multi-dataset/xtts_v2 --text 'Hello world' --out_path temp.wav"
   },
   "build": {
     "appId": "com.foxassistant.app",
@@ -24,6 +26,7 @@
       "index.html",
       "styles.css",
       "assets/**/*",
+      "coqui-models/**/*",
       "node_modules/**/*",
       "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
       "!node_modules/*/{test,__tests__,tests,powered-test,example,examples}",

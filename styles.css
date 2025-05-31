@@ -1,4 +1,3 @@
-
 body {
     margin: 0;
     overflow: hidden;
@@ -162,12 +161,13 @@ body {
     border-left: 2px solid #ff00cc;
 }
 
+/* Settings Panel - Enhanced for Coqui TTS */
 #settings {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: rgba(15, 20, 40, 0.9);
+    background-color: rgba(15, 20, 40, 0.95);
     padding: 20px;
     border-radius: 12px;
     color: white;
@@ -175,8 +175,10 @@ body {
     z-index: 200;
     box-shadow: 0 0 30px rgba(0, 240, 255, 0.7), inset 0 0 15px rgba(0, 0, 0, 0.5);
     animation: fadeIn 0.3s ease;
-    width: 80%;
-    max-width: 250px;
+    width: 85%;
+    max-width: 300px;
+    max-height: 85vh;
+    overflow-y: auto;
     border: 1px solid rgba(0, 240, 255, 0.4);
     backdrop-filter: blur(10px);
 }
@@ -189,6 +191,12 @@ body {
     font-size: 18px;
     color: #ff0055;
     text-shadow: 0 0 5px rgba(255, 0, 85, 0.8);
+    z-index: 201;
+}
+
+.settings-close:hover {
+    color: #ff3377;
+    transform: scale(1.2);
 }
 
 @keyframes fadeIn {
@@ -200,6 +208,241 @@ body {
         opacity: 1;
         transform: translate(-50%, -50%);
     }
+}
+
+/* Coqui TTS Settings Section */
+#coqui-tts-settings {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(0, 255, 157, 0.1), rgba(0, 240, 255, 0.1));
+    border: 1px solid rgba(0, 255, 157, 0.3);
+    box-shadow: 0 0 15px rgba(0, 255, 157, 0.2);
+}
+
+#coqui-tts-settings h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #00ff9d;
+    text-align: center;
+    font-size: 16px;
+    text-shadow: 0 0 8px rgba(0, 255, 157, 0.8);
+    letter-spacing: 1px;
+}
+
+.setting-group {
+    margin-bottom: 12px;
+}
+
+.setting-group label {
+    display: block;
+    margin-bottom: 4px;
+    color: #00f0ff;
+    font-size: 12px;
+    text-shadow: 0 0 5px rgba(0, 240, 255, 0.5);
+    font-weight: 500;
+}
+
+.setting-group input[type="text"],
+.setting-group select {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background-color: rgba(10, 15, 30, 0.9);
+    border: 1px solid rgba(0, 255, 157, 0.4);
+    color: white;
+    font-size: 12px;
+    font-family: 'Rajdhani', sans-serif;
+    outline: none;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7), 0 0 8px rgba(0, 255, 157, 0.3);
+    transition: all 0.3s ease;
+}
+
+.setting-group input[type="text"]:focus,
+.setting-group select:focus {
+    border-color: rgba(0, 255, 157, 0.8);
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7), 0 0 15px rgba(0, 255, 157, 0.6);
+    background-color: rgba(15, 25, 40, 0.9);
+}
+
+.setting-group input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
+}
+
+/* File input group for speaker WAV */
+.file-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.file-input-group input {
+    flex: 1;
+}
+
+.file-input-group button {
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+
+/* Button styles */
+.small-btn,
+.test-btn,
+.action-btn,
+.test-voice-btn {
+    padding: 8px 12px;
+    margin: 2px;
+    border-radius: 6px;
+    border: 1px solid;
+    background-color: rgba(15, 25, 50, 0.9);
+    color: white;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.3s ease;
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 0.5px;
+    outline: none;
+    font-weight: 500;
+    text-shadow: 0 0 5px currentColor;
+}
+
+.small-btn {
+    border-color: rgba(0, 240, 255, 0.4);
+    color: #00f0ff;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+    padding: 6px 10px;
+    font-size: 10px;
+}
+
+.test-btn {
+    border-color: rgba(255, 238, 0, 0.4);
+    color: #ffee00;
+    box-shadow: 0 0 10px rgba(255, 238, 0, 0.4);
+    width: 48%;
+}
+
+.action-btn {
+    border-color: rgba(0, 255, 157, 0.4);
+    color: #00ff9d;
+    box-shadow: 0 0 10px rgba(0, 255, 157, 0.4);
+    width: 48%;
+}
+
+.test-voice-btn {
+    border-color: rgba(255, 0, 204, 0.4);
+    color: #ff00cc;
+    box-shadow: 0 0 12px rgba(255, 0, 204, 0.4);
+    width: 100%;
+    padding: 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.small-btn:hover,
+.test-btn:hover,
+.action-btn:hover,
+.test-voice-btn:hover {
+    background-color: rgba(25, 35, 65, 0.95);
+    box-shadow: 0 0 20px currentColor, inset 0 0 10px rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.small-btn:disabled,
+.test-btn:disabled,
+.action-btn:disabled,
+.test-voice-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 0 5px rgba(128, 128, 128, 0.3);
+}
+
+/* Button row layout */
+.button-row {
+    display: flex;
+    gap: 4px;
+    justify-content: space-between;
+}
+
+/* Status indicators */
+.test-btn.success,
+.action-btn.success {
+    background-color: rgba(0, 255, 157, 0.3) !important;
+    border-color: rgba(0, 255, 157, 0.8) !important;
+    color: #00ff9d !important;
+}
+
+.test-btn.error,
+.action-btn.error {
+    background-color: rgba(255, 0, 85, 0.3) !important;
+    border-color: rgba(255, 0, 85, 0.8) !important;
+    color: #ff0055 !important;
+}
+
+/* Status display */
+.status-display {
+    padding: 8px 12px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 10px;
+    background-color: rgba(5, 10, 25, 0.5);
+    border: 1px solid rgba(128, 128, 128, 0.3);
+    color: #cccccc;
+    transition: all 0.3s ease;
+}
+
+.status-display.connected {
+    background-color: rgba(0, 255, 157, 0.2);
+    border-color: rgba(0, 255, 157, 0.6);
+    color: #00ff9d;
+    box-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
+}
+
+.status-display.disconnected {
+    background-color: rgba(255, 238, 0, 0.2);
+    border-color: rgba(255, 238, 0, 0.6);
+    color: #ffee00;
+    box-shadow: 0 0 10px rgba(255, 238, 0, 0.3);
+}
+
+.status-display.error {
+    background-color: rgba(255, 0, 85, 0.2);
+    border-color: rgba(255, 0, 85, 0.6);
+    color: #ff0055;
+    box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1px solid rgba(0, 255, 157, 0.4);
+    border-radius: 3px;
+    background-color: rgba(10, 15, 30, 0.8);
+    margin-right: 8px;
+    vertical-align: middle;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+input[type="checkbox"]:checked {
+    background-color: rgba(0, 255, 157, 0.3);
+    border-color: rgba(0, 255, 157, 0.8);
+    box-shadow: 0 0 8px rgba(0, 255, 157, 0.5);
+}
+
+input[type="checkbox"]:checked::after {
+    content: '✓';
+    display: block;
+    text-align: center;
+    color: #00ff9d;
+    font-size: 12px;
+    line-height: 14px;
+    font-weight: bold;
 }
 
 /* Futuristic buttons & inputs */
@@ -296,6 +539,10 @@ button:hover {
 
 #api-key-container {
     margin-top: 15px;
+    padding: 12px;
+    background-color: rgba(5, 10, 25, 0.3);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 0, 204, 0.2);
 }
 
 #api-key-input {
@@ -303,13 +550,13 @@ button:hover {
     padding: 8px;
     border-radius: 6px;
     background-color: rgba(10, 15, 30, 0.8);
-    border: 1px solid rgba(0, 240, 255, 0.4);
+    border: 1px solid rgba(255, 0, 204, 0.4);
     color: white;
     margin-top: 5px;
     font-size: 12px;
     font-family: 'Rajdhani', sans-serif;
     outline: none;
-    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7), 0 0 8px rgba(0, 240, 255, 0.3);
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7), 0 0 8px rgba(255, 0, 204, 0.3);
 }
 
 /* Settings labels */
@@ -348,12 +595,28 @@ button:hover {
     box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
     border: 1px solid rgba(0, 240, 255, 0.3);
     backdrop-filter: blur(5px);
+    z-index: 300;
+}
+
+/* Voice selection dropdown - Coqui specific */
+#voice-select {
+    background: linear-gradient(135deg, rgba(0, 255, 157, 0.1), rgba(0, 240, 255, 0.1));
+    border: 1px solid rgba(0, 255, 157, 0.5);
+    color: #00ff9d;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(0, 255, 157, 0.6);
+}
+
+#voice-select option {
+    background-color: rgba(15, 25, 50, 0.95);
+    color: white;
+    padding: 8px;
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -362,21 +625,189 @@ button:hover {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(0, 240, 255, 0.5);
+    background: linear-gradient(45deg, rgba(0, 255, 157, 0.5), rgba(0, 240, 255, 0.5));
     border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 255, 255, 0.7);
+    background: linear-gradient(45deg, rgba(0, 255, 157, 0.8), rgba(0, 240, 255, 0.8));
 }
 
 /* Add futuristic pulsing glow animation */
 @keyframes neonPulse {
-    0% { opacity: 0.7; }
-    50% { opacity: 1; }
-    100% { opacity: 0.7; }
+    0% { opacity: 0.7; box-shadow: 0 0 10px currentColor; }
+    50% { opacity: 1; box-shadow: 0 0 20px currentColor, 0 0 5px rgba(255, 255, 255, 0.3); }
+    100% { opacity: 0.7; box-shadow: 0 0 10px currentColor; }
+}
+
+@keyframes coquiPulse {
+    0% { box-shadow: 0 0 15px rgba(0, 255, 157, 0.2); }
+    50% { box-shadow: 0 0 25px rgba(0, 255, 157, 0.6), 0 0 5px rgba(0, 240, 255, 0.3); }
+    100% { box-shadow: 0 0 15px rgba(0, 255, 157, 0.2); }
 }
 
 .menu-button, #status, #send-text-btn, #start-voice-btn, #stop-voice-btn {
-    animation: neonPulse 2s infinite;
+    animation: neonPulse 3s infinite;
+}
+
+#coqui-tts-settings {
+    animation: coquiPulse 4s infinite;
+}
+
+/* Special effects for connected status */
+.status-display.connected {
+    animation: connectedPulse 2s infinite;
+}
+
+@keyframes connectedPulse {
+    0% { box-shadow: 0 0 10px rgba(0, 255, 157, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(0, 255, 157, 0.6), inset 0 0 5px rgba(0, 255, 157, 0.2); }
+    100% { box-shadow: 0 0 10px rgba(0, 255, 157, 0.3); }
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 300px) {
+    #settings {
+        width: 95%;
+        padding: 15px;
+    }
+    
+    .button-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .test-btn,
+    .action-btn {
+        width: 100%;
+    }
+    
+    #coqui-tts-settings h4 {
+        font-size: 14px;
+    }
+    
+    .setting-group label {
+        font-size: 11px;
+    }
+    
+    .setting-group input,
+    .setting-group select {
+        font-size: 11px;
+        padding: 6px 8px;
+    }
+}
+
+/* Focus animations */
+.setting-group input:focus,
+.setting-group select:focus {
+    animation: coquiFocus 1s ease-in-out;
+}
+
+@keyframes coquiFocus {
+    0% { 
+        box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7), 0 0 8px rgba(0, 255, 157, 0.3); 
+        transform: scale(1);
+    }
+    50% { 
+        box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 255, 157, 0.8);
+        transform: scale(1.02);
+    }
+    100% { 
+        box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7), 0 0 15px rgba(0, 255, 157, 0.6);
+        transform: scale(1);
+    }
+}
+
+/* Loading animation for buttons */
+@keyframes buttonLoading {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+.test-btn:disabled,
+.action-btn:disabled,
+.test-voice-btn:disabled {
+    animation: buttonLoading 1s infinite;
+}
+
+/* Coqui TTS branding colors */
+.coqui-brand {
+    background: linear-gradient(135deg, #00ff9d, #00f0ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: bold;
+    text-shadow: none;
+}
+
+/* Settings sections organization */
+#settings > div:not(:last-child) {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+}
+
+/* Enhanced button hover effects */
+.test-voice-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 0, 204, 0.2), rgba(255, 0, 204, 0.1));
+    box-shadow: 0 0 25px rgba(255, 0, 204, 0.6), 0 0 10px rgba(255, 255, 255, 0.2);
+    transform: translateY(-3px) scale(1.02);
+}
+
+/* Success/error state animations */
+@keyframes successFlash {
+    0% { background-color: rgba(0, 255, 157, 0.1); }
+    50% { background-color: rgba(0, 255, 157, 0.4); }
+    100% { background-color: rgba(0, 255, 157, 0.3); }
+}
+
+@keyframes errorFlash {
+    0% { background-color: rgba(255, 0, 85, 0.1); }
+    50% { background-color: rgba(255, 0, 85, 0.4); }
+    100% { background-color: rgba(255, 0, 85, 0.3); }
+}
+
+.success {
+    animation: successFlash 0.5s ease-in-out;
+}
+
+.error {
+    animation: errorFlash 0.5s ease-in-out;
+}
+
+/* Keyboard shortcut hints */
+.shortcut-hint {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    float: right;
+    font-style: italic;
+}
+
+/* Settings header with Coqui branding */
+#settings h3::before {
+    content: "🦊 ";
+    font-size: 20px;
+    margin-right: 8px;
+}
+
+/* Enhanced visual feedback */
+.button-feedback {
+    position: relative;
+    overflow: hidden;
+}
+
+.button-feedback::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.button-feedback:hover::after {
+    left: 100%;
 }

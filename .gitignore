@@ -6,3 +6,4 @@ package-lock.json
 *.png
 build
 *.ico
+*.wav
