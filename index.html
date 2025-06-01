@@ -8,7 +8,9 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
 </head>
 
 <body>
@@ -54,13 +56,15 @@
   <div id="settings">
     <div class="settings-close" id="settings-close">×</div>
     <h3>Settings</h3>
-    <div>
-      <label for="voice-select">Voice:</label>
-      <select id="voice-select"></select>
-    </div>
     <div id="api-key-container">
       <label for="api-key-input">OpenAI API Key:</label>
       <input type="password" id="api-key-input" placeholder="sk-...">
+      <p class="setting-info">Required for AI chat and voice recognition</p>
+    </div>
+    <div id="tts-info">
+      <h4>Voice Synthesis</h4>
+      <p class="setting-info">Using text-to-speech.online service</p>
+      <p class="setting-info">No configuration required</p>
     </div>
   </div>
 

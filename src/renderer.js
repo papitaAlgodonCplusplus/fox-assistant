@@ -165,7 +165,6 @@ function setupDraggable() {
 function setupSettings() {
   const settingsPanel = document.getElementById('settings');
   const apiKeyInput = document.getElementById('api-key-input');
-  const voiceSelect = document.getElementById('voice-select');
   
   // Load API key
   if (window.electron && window.electron.getApiKey) {
@@ -179,23 +178,6 @@ function setupSettings() {
     if (window.electron && window.electron.saveApiKey) {
       window.electron.saveApiKey(e.target.value);
     }
-  });
-  
-  // Voice selection
-  const voices = [
-    { name: 'Default Voice', path: './coqui-models/speaker.wav' },
-    { name: 'Nicolas Voice', path: './coqui-models/nicolas.wav' }
-  ];
-  
-  voices.forEach(voice => {
-    const option = document.createElement('option');
-    option.value = voice.path;
-    option.textContent = voice.name;
-    voiceSelect.appendChild(option);
-  });
-  
-  voiceSelect.addEventListener('change', (e) => {
-    speechHandler.setSpeakerWav(e.target.value);
   });
 }
 
@@ -291,20 +273,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const testVoiceBtn = document.createElement('button');
   testVoiceBtn.id = 'test-voice-btn';
   testVoiceBtn.textContent = '🎤 Test Voice';
-  testVoiceBtn.style.cssText = `
-    width: 100%;
-    margin-top: 10px;
-    padding: 10px;
-    background-color: rgba(255, 0, 204, 0.2);
-    color: #ff00cc;
-    border: 1px solid rgba(255, 0, 204, 0.5);
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: Rajdhani, sans-serif;
-    font-size: 12px;
-    text-shadow: 0 0 5px rgba(255, 0, 204, 0.8);
-    box-shadow: 0 0 12px rgba(255, 0, 204, 0.4);
-  `;
+  testVoiceBtn.className = 'test-voice-btn';
   
   testVoiceBtn.addEventListener('click', async () => {
     testVoiceBtn.disabled = true;
@@ -331,8 +300,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   
   console.log('✅ Fox Assistant Ready!');
-  console.log('📌 Make sure TTS server is running on port 5002');
-  console.log('📌 Run: tts-server --model_name tts_models/multilingual/multi-dataset/xtts_v2');
+  console.log('📌 Using text-to-speech.online for voice synthesis');
 });
 
 // Animation loop
@@ -359,13 +327,19 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+// Cleanup on window close
+window.addEventListener('beforeunload', () => {
+  if (speechHandler.cleanup) {
+    speechHandler.cleanup();
+  }
+});
+
 // Export for debugging
 window.foxAssistant = {
   speechHandler,
   chatGPT,
   fox,
-  testVoice: () => speechHandler.testVoice(),
-  checkServer: () => speechHandler.checkTTSServer()
+  testVoice: () => speechHandler.testVoice()
 };
 
 console.log('🦊 Debug tools available at window.foxAssistant');

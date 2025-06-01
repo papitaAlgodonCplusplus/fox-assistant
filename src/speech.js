@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const axios = require('axios');
+const puppeteer = require('puppeteer');
 
 export class SpeechHandler {
   constructor(onSpeechStart, onSpeechEnd, onResult) {
@@ -18,10 +19,9 @@ export class SpeechHandler {
     this.apiKey = process.env.OPENAI_API_KEY;
     this.audioElement = new Audio();
     
-    // TTS Configuration
-    this.ttsServerUrl = 'http://localhost:5002';
-    this.speakerWavPath = path.join(process.cwd(), 'coqui-models', 'speaker.wav');
-    this.outputPath = path.join(process.cwd(), 'output.wav');
+    // Puppeteer browser instance
+    this.browser = null;
+    this.page = null;
     
     // Create temp directory if it doesn't exist
     if (!fs.existsSync(this.tempDir)) {
@@ -29,8 +29,48 @@ export class SpeechHandler {
     }
     
     console.log('🦊 Speech Handler initialized');
-    console.log(`🎤 Speaker WAV: ${this.speakerWavPath}`);
-    console.log(`🌐 TTS Server: ${this.ttsServerUrl}`);
+    console.log('🌐 Using text-to-speech.online service');
+    
+    // Initialize browser in background
+    this.initializeBrowser();
+  }
+
+  // Initialize Puppeteer browser
+  async initializeBrowser() {
+    try {
+      this.browser = await puppeteer.launch({
+        headless: 'new', // Use new headless mode
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-web-security',
+          '--disable-features=IsolateOrigins,site-per-process',
+          '--autoplay-policy=no-user-gesture-required'
+        ]
+      });
+      
+      this.page = await this.browser.newPage();
+      
+      // Set permissions for audio
+      const context = this.browser.defaultBrowserContext();
+      await context.overridePermissions('https://www.text-to-speech.online', ['autoplay']);
+      
+      // Navigate to TTS website
+      await this.page.goto('https://www.text-to-speech.online/', {
+        waitUntil: 'networkidle2'
+      });
+      
+      console.log('✅ Browser initialized for TTS');
+    } catch (error) {
+      console.error('❌ Failed to initialize browser:', error);
+    }
+  }
+
+  // Cleanup browser on exit
+  async cleanup() {
+    if (this.browser) {
+      await this.browser.close();
+    }
   }
 
   // Start listening for voice input
@@ -121,22 +161,18 @@ export class SpeechHandler {
     }
   }
 
-  // Main speak method using TTS server
+  // Main speak method using web scraping
   async speak(text) {
     console.log('🗣️ Speaking:', text.substring(0, 50) + '...');
     
     try {
-      // Check if server is running
-      const isServerRunning = await this.checkTTSServer();
-      if (!isServerRunning) {
-        throw new Error('TTS server not running on port 5002');
+      // Ensure browser is initialized
+      if (!this.page) {
+        await this.initializeBrowser();
       }
       
-      // Generate speech using Python command
-      await this.generateSpeech(text);
-      
-      // Play the generated audio
-      await this.playGeneratedAudio();
+      // Use web TTS service
+      await this.speakUsingWebTTS(text);
       
     } catch (error) {
       console.error('❌ TTS Error:', error);
@@ -145,67 +181,84 @@ export class SpeechHandler {
     }
   }
 
-  // Check if TTS server is running
-  async checkTTSServer() {
+  // Speak using web TTS service
+  async speakUsingWebTTS(text) {
     try {
-      const response = await axios.get(this.ttsServerUrl, { timeout: 2000 });
-      return true;
-    } catch (error) {
-      console.log('⚠️ TTS server not reachable at', this.ttsServerUrl);
-      return false;
-    }
-  }
-
-  // Generate speech using Python TTS command
-  async generateSpeech(text) {
-    return new Promise((resolve, reject) => {
-      // Escape quotes in text
-      const safeText = text.replace(/"/g, '\\"');
-      
-      // Build the Python command
-      const command = `tts --text "${safeText}" --model_name "tts_models/multilingual/multi-dataset/xtts_v2" --speaker_wav "${this.speakerWavPath}" --language_idx "en" --out_path "${this.outputPath}"`;
-      
-      console.log('🐍 Running TTS command...');
-      
-      exec(command, (error, stdout, stderr) => {
-        if (error) {
-          console.error('TTS generation failed:', stderr);
-          reject(error);
-          return;
-        }
-        
-        console.log('✅ TTS generation completed');
-        resolve();
-      });
-    });
-  }
-
-  // Play the generated audio file
-  async playGeneratedAudio() {
-    return new Promise((resolve, reject) => {
-      if (!fs.existsSync(this.outputPath)) {
-        reject(new Error('Generated audio file not found'));
-        return;
+      // Navigate to page if not already there
+      const currentUrl = await this.page.url();
+      if (!currentUrl.includes('text-to-speech.online')) {
+        await this.page.goto('https://www.text-to-speech.online/', {
+          waitUntil: 'networkidle2'
+        });
       }
       
-      const audioData = fs.readFileSync(this.outputPath);
-      const blob = new Blob([audioData], { type: 'audio/wav' });
-      const audioUrl = URL.createObjectURL(blob);
+      // Clear existing text and input new text
+      await this.page.evaluate(() => {
+        const textarea = document.querySelector('textarea.form-control.br-none');
+        if (textarea) {
+          textarea.value = '';
+          textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
       
-      this.audioElement.src = audioUrl;
-      this.audioElement.onended = () => {
-        URL.revokeObjectURL(audioUrl);
-        console.log('✅ Audio playback completed');
-        resolve();
-      };
+      // Type the new text
+      await this.page.type('textarea.form-control.br-none', text, { delay: 10 });
       
-      this.audioElement.onerror = (error) => {
-        URL.revokeObjectURL(audioUrl);
-        reject(error);
-      };
+      // Setup audio capture
+      const audioPromise = new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Audio playback timeout'));
+        }, 30000); // 30 second timeout
+        
+        // Listen for audio playback
+        this.page.on('response', async (response) => {
+          if (response.url().includes('.mp3') || response.url().includes('audio')) {
+            clearTimeout(timeout);
+            
+            // Wait for audio to finish playing
+            await this.page.evaluate(() => {
+              return new Promise((resolve) => {
+                const checkAudio = setInterval(() => {
+                  const audioElements = document.querySelectorAll('audio');
+                  let allFinished = true;
+                  
+                  audioElements.forEach(audio => {
+                    if (!audio.paused && !audio.ended) {
+                      allFinished = false;
+                    }
+                  });
+                  
+                  if (allFinished) {
+                    clearInterval(checkAudio);
+                    resolve();
+                  }
+                }, 100);
+                
+                // Fallback timeout
+                setTimeout(() => {
+                  clearInterval(checkAudio);
+                  resolve();
+                }, 20000);
+              });
+            });
+            
+            resolve();
+          }
+        });
+      });
       
-      this.audioElement.play().catch(reject);
-    });
+      // Click the play button
+      await this.page.click('#quick-play');
+      
+      // Wait for audio to complete
+      await audioPromise;
+      
+      console.log('✅ TTS playback completed');
+      
+    } catch (error) {
+      console.error('❌ Web TTS failed:', error);
+      throw error;
+    }
   }
 
   // Test the TTS system
@@ -255,9 +308,8 @@ export class SpeechHandler {
     });
   }
   
-  // Set speaker WAV path
+  // Voice settings (kept for compatibility but not used)
   setSpeakerWav(path) {
-    this.speakerWavPath = path;
-    console.log('🎤 Speaker WAV updated:', path);
+    console.log('🎤 Voice settings not applicable for web TTS');
   }
 }
