@@ -44,9 +44,19 @@
   <div id="circular-menu">
     <div class="menu-button" id="text-mode-btn" data-tooltip="Text Chat">T</div>
     <div class="menu-button" id="voice-mode-btn" data-tooltip="Voice Chat">V</div>
+    <div class="menu-button" id="actions-btn" data-tooltip="Actions">A</div>
     <div class="menu-button" id="settings-btn" data-tooltip="Settings">S</div>
     <div class="menu-button" id="minimize-btn" data-tooltip="Minimize">-</div>
     <div class="menu-button" id="quit-btn" data-tooltip="Quit">X</div>
+  </div>
+
+  <!-- Actions submenu -->
+  <div id="actions-menu">
+    <div class="action-button" id="pat-btn" data-tooltip="Pat Fox">🤚</div>
+    <div class="action-button" id="kiss-btn" data-tooltip="Kiss Fox">💋</div>
+    <div class="action-button" id="dance-btn" data-tooltip="Dance">💃</div>
+    <div class="action-button" id="flirt-btn" data-tooltip="Random Flirt">😘</div>
+    <div class="action-button" id="joke-btn" data-tooltip="Random Joke">😄</div>
   </div>
 
   <!-- Tooltip element -->
@@ -56,22 +66,50 @@
   <div id="settings">
     <div class="settings-close" id="settings-close">×</div>
     <h3>Settings</h3>
+    
     <div id="api-key-container">
       <label for="api-key-input">OpenAI API Key:</label>
       <input type="password" id="api-key-input" placeholder="sk-...">
       <p class="setting-info">Required for AI chat and voice recognition</p>
     </div>
+
+    <div id="voice-settings-container">
+      <h4>Voice Settings</h4>
+      <label for="voice-select">Voice:</label>
+      <select id="voice-select">
+        <option value="af_bella">Bella (Female)</option>
+        <option value="af_sarah">Sarah (Female)</option>
+        <option value="af_nicole">Nicole (Female)</option>
+        <option value="af_sky">Sky (Female)</option>
+        <option value="af_nova">Nova (Female)</option>
+        <option value="am_adam">Adam (Male)</option>
+        <option value="am_echo">Echo (Male)</option>
+        <option value="am_liam">Liam (Male)</option>
+        <option value="am_puck">Puck (Male)</option>
+        <option value="am_fenrir">Fenrir (Male)</option>
+        <option value="am_onyx">Onyx (Male)</option>
+        <option value="ff_siwis" selected>Siwis (French)</option>
+        <option value="bf_alice">Alice (British Female)</option>
+        <option value="bf_emma">Emma (British Female)</option>
+        <option value="bm_daniel">Daniel (British Male)</option>
+        <option value="jf_alpha">Alpha (Japanese Female)</option>
+        <option value="jm_kumo">Kumo (Japanese Male)</option>
+      </select>
+      <p class="setting-info">Choose your preferred voice for TTS</p>
+      <button class="test-voice-btn" id="test-voice-btn">🎤 Test Voice</button>
+    </div>
+    
     <div id="tts-info">
       <h4>Voice Synthesis</h4>
-      <p class="setting-info">Using text-to-speech.online service</p>
-      <p class="setting-info">No configuration required</p>
+      <p class="setting-info">Using Kokoro TTS via DeepInfra</p>
+      <p class="setting-info">High-quality neural voice synthesis</p>
     </div>
   </div>
 
   <script src="./dist/renderer.js"></script>
 </body>
 <script>
-  // Add close button handler (requires Electron or similar)
+  // Add close button handler
   document.getElementById('quit-btn').onclick = function () {
     if (window.electronAPI && window.electronAPI.closeWindow) {
       window.electronAPI.closeWindow();
@@ -81,11 +119,14 @@
   };
 </script>
 <script>
-  // Add minimize button handler (requires Electron or similar)
+  // Add minimize button handler
   document.getElementById('minimize-btn').onclick = function () {
-    circularMenu = document.getElementById('circular-menu');
+    const circularMenu = document.getElementById('circular-menu');
+    const actionsMenu = document.getElementById('actions-menu');
+    
     if (circularMenu.classList.contains('visible')) {
       circularMenu.classList.remove('visible');
+      actionsMenu.classList.remove('visible');
     } else {
       circularMenu.classList.add('visible');
     }

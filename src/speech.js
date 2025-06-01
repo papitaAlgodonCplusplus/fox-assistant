@@ -102,6 +102,8 @@ export class SpeechHandler {
     if (!text) return;
 
     console.log('🔊 Sending to Kokoro TTS server:', text);
+    console.log('🎵 Using voice:', this.ttsSettings.voice);
+    
     try {
       const response = await fetch('http://localhost:3001/speak', {
         method: 'POST',
@@ -123,10 +125,11 @@ export class SpeechHandler {
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
 
-      // Process the audio with pitch shift
+      // Apply pitch shifting for fox voices
       if (this.ttsSettings.voice.startsWith('ff_')) {
         await this.playAudioWithPitchShift(audioUrl, -2);
       } else {
+        // Default playback for other voices
         this.audioElement.src = audioUrl;
         await this.audioElement.play();
       }
@@ -212,26 +215,118 @@ export class SpeechHandler {
     });
   }
 
-  async testVoice(voice = 'af_bella') {
-    const testText = "Hello! I am your virtual assistant. This is a voice test.";
-    this.updateTtsSettings({ voice });
-    await this.speakServerSide(testText);
+  async testVoice(voice = null) {
+    const testVoice = voice || this.ttsSettings.voice;
+    const testTexts = {
+      // Fox voices
+      'ff_siwis': "Hello Alex! I'm your adorable fox assistant. How are you feeling today, darling?",
+      
+      // Female voices
+      'af_bella': "Hi there! I'm Bella, your friendly assistant. Ready to chat?",
+      'af_sarah': "Hello! Sarah here, nice to meet you. How can I help today?",
+      'af_nicole': "Hey! Nicole speaking. What's on your mind?",
+      'af_sky': "Hi! I'm Sky, your virtual companion. What shall we talk about?",
+      'af_nova': "Hello! Nova here, ready to assist you with anything you need!",
+      
+      // Male voices  
+      'am_adam': "Hello! Adam here, your digital assistant. How can I help you today?",
+      'am_echo': "Hi there! Echo speaking. What can I do for you?",
+      'am_liam': "Hey! Liam here, ready to chat whenever you are.",
+      'am_onyx': "Hello! Onyx at your service. What's going on?",
+      
+      // British voices
+      'bf_alice': "Hello! Alice here, lovely to meet you. How are you today?",
+      'bf_emma': "Hi there! Emma speaking, how may I assist you today?",
+      'bm_daniel': "Hello! Daniel here, pleased to make your acquaintance.",
+      
+      // Japanese voices
+      'jf_alpha': "こんにちは! Alpha desu. Nice to meet you!",
+      'jm_kumo': "Hello! Kumo here, yoroshiku onegaishimasu!"
+    };
+    
+    const testText = testTexts[testVoice] || "Hello! This is a voice test. How do I sound?";
+    
+    // Temporarily update voice for test
+    const originalVoice = this.ttsSettings.voice;
+    this.updateTtsSettings({ voice: testVoice });
+    
+    try {
+      await this.speakServerSide(testText);
+      console.log(`✅ Voice test completed for: ${testVoice}`);
+    } finally {
+      // Restore original voice
+      this.updateTtsSettings({ voice: originalVoice });
+    }
   }
 
-  // Get available voices
+  // Get available voices with descriptions
   getAvailableVoices() {
     return [
-      'af_alloy', 'af_aoede', 'af_bella', 'af_heart', 'af_jessica',
-      'af_kore', 'af_nicole', 'af_nova', 'af_river', 'af_sarah',
-      'af_sky', 'am_adam', 'am_echo', 'am_eric', 'am_fenrir',
-      'am_liam', 'am_michael', 'am_onyx', 'am_puck', 'am_santa',
-      'bf_alice', 'bf_emma', 'bf_isabella', 'bf_lily', 'bm_daniel',
-      'bm_fable', 'bm_george', 'bm_lewis', 'ef_dora', 'em_alex',
-      'em_santa', 'ff_siwis', 'hf_alpha', 'hf_beta', 'hm_omega',
-      'hm_psi', 'if_sara', 'im_nicola', 'jf_alpha', 'jf_gongitsune',
-      'jf_nezumi', 'jf_tebukuro', 'jm_kumo', 'pf_dora', 'pm_alex',
-      'pm_santa', 'zf_xiaobei', 'zf_xiaoni', 'zf_xiaoxiao', 'zf_xiaoyi',
-      'zm_yunjian', 'zm_yunxi', 'zm_yunxia', 'zm_yunyang'
+      // American Female
+      { id: 'af_alloy', name: 'Alloy (Female)', category: 'American' },
+      { id: 'af_aoede', name: 'Aoede (Female)', category: 'American' },
+      { id: 'af_bella', name: 'Bella (Female)', category: 'American' },
+      { id: 'af_heart', name: 'Heart (Female)', category: 'American' },
+      { id: 'af_jessica', name: 'Jessica (Female)', category: 'American' },
+      { id: 'af_kore', name: 'Kore (Female)', category: 'American' },
+      { id: 'af_nicole', name: 'Nicole (Female)', category: 'American' },
+      { id: 'af_nova', name: 'Nova (Female)', category: 'American' },
+      { id: 'af_river', name: 'River (Female)', category: 'American' },
+      { id: 'af_sarah', name: 'Sarah (Female)', category: 'American' },
+      { id: 'af_sky', name: 'Sky (Female)', category: 'American' },
+      
+      // American Male
+      { id: 'am_adam', name: 'Adam (Male)', category: 'American' },
+      { id: 'am_echo', name: 'Echo (Male)', category: 'American' },
+      { id: 'am_eric', name: 'Eric (Male)', category: 'American' },
+      { id: 'am_fenrir', name: 'Fenrir (Male)', category: 'American' },
+      { id: 'am_liam', name: 'Liam (Male)', category: 'American' },
+      { id: 'am_michael', name: 'Michael (Male)', category: 'American' },
+      { id: 'am_onyx', name: 'Onyx (Male)', category: 'American' },
+      { id: 'am_puck', name: 'Puck (Male)', category: 'American' },
+      { id: 'am_santa', name: 'Santa (Male)', category: 'American' },
+      
+      // British
+      { id: 'bf_alice', name: 'Alice (British Female)', category: 'British' },
+      { id: 'bf_emma', name: 'Emma (British Female)', category: 'British' },
+      { id: 'bf_isabella', name: 'Isabella (British Female)', category: 'British' },
+      { id: 'bf_lily', name: 'Lily (British Female)', category: 'British' },
+      { id: 'bm_daniel', name: 'Daniel (British Male)', category: 'British' },
+      { id: 'bm_fable', name: 'Fable (British Male)', category: 'British' },
+      { id: 'bm_george', name: 'George (British Male)', category: 'British' },
+      { id: 'bm_lewis', name: 'Lewis (British Male)', category: 'British' },
+      
+      // Fox Voice (Special)
+      { id: 'ff_siwis', name: 'Siwis (Fox Voice)', category: 'Special' },
+      
+      // Japanese
+      { id: 'jf_alpha', name: 'Alpha (Japanese Female)', category: 'Japanese' },
+      { id: 'jf_gongitsune', name: 'Gongitsune (Japanese Female)', category: 'Japanese' },
+      { id: 'jf_nezumi', name: 'Nezumi (Japanese Female)', category: 'Japanese' },
+      { id: 'jf_tebukuro', name: 'Tebukuro (Japanese Female)', category: 'Japanese' },
+      { id: 'jm_kumo', name: 'Kumo (Japanese Male)', category: 'Japanese' },
+      
+      // Chinese
+      { id: 'zf_xiaobei', name: 'Xiaobei (Chinese Female)', category: 'Chinese' },
+      { id: 'zf_xiaoni', name: 'Xiaoni (Chinese Female)', category: 'Chinese' },
+      { id: 'zf_xiaoxiao', name: 'Xiaoxiao (Chinese Female)', category: 'Chinese' },
+      { id: 'zf_xiaoyi', name: 'Xiaoyi (Chinese Female)', category: 'Chinese' },
+      { id: 'zm_yunjian', name: 'Yunjian (Chinese Male)', category: 'Chinese' },
+      { id: 'zm_yunxi', name: 'Yunxi (Chinese Male)', category: 'Chinese' },
+      { id: 'zm_yunxia', name: 'Yunxia (Chinese Male)', category: 'Chinese' },
+      { id: 'zm_yunyang', name: 'Yunyang (Chinese Male)', category: 'Chinese' }
     ];
+  }
+
+  // Get voice category
+  getVoiceCategory(voiceId) {
+    const voice = this.getAvailableVoices().find(v => v.id === voiceId);
+    return voice ? voice.category : 'Unknown';
+  }
+
+  // Get voice display name
+  getVoiceName(voiceId) {
+    const voice = this.getAvailableVoices().find(v => v.id === voiceId);
+    return voice ? voice.name : voiceId;
   }
 }

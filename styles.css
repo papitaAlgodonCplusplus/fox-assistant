@@ -36,6 +36,25 @@ body {
     pointer-events: all;
 }
 
+/* Actions submenu */
+#actions-menu {
+    position: absolute;
+    top: 50%;
+    left: 120%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 101;
+}
+
+#actions-menu.visible {
+    opacity: 1;
+    pointer-events: all;
+}
+
 /* Circular menu buttons - Futuristic Neon Style */
 .menu-button {
     position: absolute;
@@ -56,6 +75,26 @@ body {
     text-shadow: 0 0 5px rgba(0, 240, 255, 0.8);
 }
 
+/* Action menu buttons */
+.action-button {
+    position: absolute;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background-color: rgba(10, 12, 25, 0.8);
+    color: #ff6b00;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 0 15px rgba(255, 107, 0, 0.7);
+    font-size: 12px;
+    z-index: 102;
+    border: 1px solid rgba(255, 107, 0, 0.5);
+    text-shadow: 0 0 5px rgba(255, 107, 0, 0.8);
+}
+
 /* Different neon colors for different buttons */
 #text-mode-btn {
     color: #ff00cc;
@@ -69,6 +108,13 @@ body {
     box-shadow: 0 0 15px rgba(0, 255, 157, 0.7);
     border: 1px solid rgba(0, 255, 157, 0.5);
     text-shadow: 0 0 5px rgba(0, 255, 157, 0.8);
+}
+
+#actions-btn {
+    color: #ff6b00;
+    box-shadow: 0 0 15px rgba(255, 107, 0, 0.7);
+    border: 1px solid rgba(255, 107, 0, 0.5);
+    text-shadow: 0 0 5px rgba(255, 107, 0, 0.8);
 }
 
 #settings-btn {
@@ -92,7 +138,43 @@ body {
     text-shadow: 0 0 5px rgba(255, 0, 85, 0.8);
 }
 
-.menu-button:hover {
+/* Action button specific colors */
+#pat-btn {
+    color: #ff69b4;
+    box-shadow: 0 0 12px rgba(255, 105, 180, 0.7);
+    border: 1px solid rgba(255, 105, 180, 0.5);
+    text-shadow: 0 0 5px rgba(255, 105, 180, 0.8);
+}
+
+#kiss-btn {
+    color: #ff1493;
+    box-shadow: 0 0 12px rgba(255, 20, 147, 0.7);
+    border: 1px solid rgba(255, 20, 147, 0.5);
+    text-shadow: 0 0 5px rgba(255, 20, 147, 0.8);
+}
+
+#dance-btn {
+    color: #9370db;
+    box-shadow: 0 0 12px rgba(147, 112, 219, 0.7);
+    border: 1px solid rgba(147, 112, 219, 0.5);
+    text-shadow: 0 0 5px rgba(147, 112, 219, 0.8);
+}
+
+#flirt-btn {
+    color: #ffd700;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.7);
+    border: 1px solid rgba(255, 215, 0, 0.5);
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.8);
+}
+
+#joke-btn {
+    color: #00ff7f;
+    box-shadow: 0 0 12px rgba(0, 255, 127, 0.7);
+    border: 1px solid rgba(0, 255, 127, 0.5);
+    text-shadow: 0 0 5px rgba(0, 255, 127, 0.8);
+}
+
+.menu-button:hover, .action-button:hover {
     transform: scale(1.2);
     background-color: rgba(20, 25, 45, 0.9);
     box-shadow: 0 0 25px currentColor, 0 0 10px rgba(255, 255, 255, 0.5);
@@ -259,7 +341,15 @@ body {
     border: 1px solid rgba(255, 0, 204, 0.2);
 }
 
-#api-key-input {
+#voice-settings-container {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: rgba(5, 10, 25, 0.3);
+    border-radius: 6px;
+    border: 1px solid rgba(0, 255, 157, 0.2);
+}
+
+#api-key-input, #voice-select {
     width: 100%;
     padding: 8px;
     border-radius: 6px;
@@ -273,9 +363,19 @@ body {
     box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7), 0 0 8px rgba(255, 0, 204, 0.3);
 }
 
-#api-key-input:focus {
+#voice-select {
+    border-color: rgba(0, 255, 157, 0.4);
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7), 0 0 8px rgba(0, 255, 157, 0.3);
+}
+
+#api-key-input:focus, #voice-select:focus {
     border-color: rgba(255, 0, 204, 0.8);
     box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7), 0 0 15px rgba(255, 0, 204, 0.6);
+}
+
+#voice-select:focus {
+    border-color: rgba(0, 255, 157, 0.8);
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7), 0 0 15px rgba(0, 255, 157, 0.6);
 }
 
 #tts-info {
@@ -451,7 +551,7 @@ button:hover {
     100% { opacity: 0.7; box-shadow: 0 0 10px currentColor; }
 }
 
-.menu-button, #status, #send-text-btn, #start-voice-btn, #stop-voice-btn {
+.menu-button, .action-button, #status, #send-text-btn, #start-voice-btn, #stop-voice-btn {
     animation: neonPulse 3s infinite;
 }
 
