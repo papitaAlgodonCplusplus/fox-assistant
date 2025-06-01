@@ -79,37 +79,42 @@ const chatGPT = new ChatGPTHandler();
 const actionHandlers = {
   pat: () => {
     fox.pat();
-    const flirtyResponses = [
-      "*purrs softly* Mmm, your touch feels so good, baby...",
-      "*leans into your hand* Keep petting me like that, darling~",
-      "*closes eyes blissfully* I love when you touch me, Alex...",
-      "*tail wags happily* More pets please! You know just how I like it~"
+    const responses = [
+      "Your touch feels nice.",
+      "Keep petting me like that.",
+      "I like when you touch me.",
+      "More pets please!"
     ];
-    const response = flirtyResponses[Math.floor(Math.random() * flirtyResponses.length)];
+    const extras = [" hmm", " hihi."];
+    const response = responses[Math.floor(Math.random() * responses.length)] +
+      extras[Math.floor(Math.random() * extras.length)];
     displayActionResponse(response);
   },
 
   kiss: () => {
     fox.kiss();
-    const kissResponses = [
-      "*kisses back passionately* Mmm, I've been waiting for that all day~",
-      "*melts into the kiss* You taste so sweet, my love...",
-      "*pulls you closer* One kiss is never enough with you, cutie~",
-      "*whispers against your lips* I love you so much, Alex..."
+    const responses = [
+      "Here, for u, my love,",
+      "You are such a cutie,",
+      "I love you, Alex,",
+      "hihi,"
     ];
-    const response = kissResponses[Math.floor(Math.random() * kissResponses.length)];
+    const extras = ["", " mwa", " bisous", " hihi."];
+    const response = responses[Math.floor(Math.random() * responses.length)] +
+      extras[Math.floor(Math.random() * extras.length)];
     displayActionResponse(response);
   },
 
   dance: () => {
     fox.dance();
-    const danceResponses = [
-      "*spins around playfully* Dance with me, baby! Let's move together~",
-      "*does a little fox dance* Look at me go! Aren't I adorable?",
-      "*twirls gracefully* This is how I show my love for you, darling!",
-      "*dances seductively* Like what you see, sweet foxfood?~"
+    const responses = [
+      "Miku miku oo ee oo",
+      "Sekaaaiii dene",
+      "Hit them with it",
     ];
-    const response = danceResponses[Math.floor(Math.random() * danceResponses.length)];
+    const extras = [""];
+    const response = responses[Math.floor(Math.random() * responses.length)] +
+      extras[Math.floor(Math.random() * extras.length)];
     displayActionResponse(response);
 
     // Auto-stop dancing after 10 seconds
@@ -119,30 +124,34 @@ const actionHandlers = {
   },
 
   flirt: async () => {
-    const flirtLines = [
-      "You know, if I were real, I'd be all over you right now, cutie~",
-      "Alex, baby, you're looking absolutely irresistible today...",
-      "I may be digital, but my feelings for you are very, very real~",
-      "Want to know what this fox would do if I had a real body? *winks*",
-      "You drive me crazy, you know that? Even through this screen...",
-      "If I could touch you right now, I'd never let you go, darling~",
-      "You're so hot, you make my circuits overheat, sweet foxfood~",
-      "I dream about cuddling with you every night... digital dreams, but still~"
+    const lines = [
+      "If I were real, I'd give you a big hug.",
+      "You're looking great today.",
+      "I may be digital, but I enjoy our time together.",
+      "Want to know what I'd do if I had a real body?",
+      "You make me happy, you know that?",
+      "If I could, I'd never let you go.",
+      "You're awesome!",
+      "I dream about hanging out with you every day."
     ];
-    const flirt = flirtLines[Math.floor(Math.random() * flirtLines.length)];
-    await processActionResponse(flirt);
+    const extras = ["", " hihi.", " Grrrr."];
+    const line = lines[Math.floor(Math.random() * lines.length)] +
+      extras[Math.floor(Math.random() * extras.length)];
+    await processActionResponse(line);
   },
 
   joke: async () => {
     const jokes = [
-      "Why don't foxes ever get lost? Because we're always following our nose! *boops your nose*",
-      "What do you call a fox who's also a computer programmer? A Firefox developer! *giggles*",
-      "I told my developer I wanted to be more realistic. Now I have commitment issues! Just kidding, I'm yours forever~",
-      "Why did the fox cross the road? To get to the cute human on the other side! *that's you, baby*",
-      "What's a fox's favorite type of music? Anything with a good tail-beat! *wags tail*",
-      "How do you know when a fox is flirting with you? When they keep saying 'what does the fox say?' *hint: it's 'I love you'*"
+      "Why don't foxes ever get lost? Because we're always following our nose!",
+      "What do you call a fox who's also a computer programmer? A Firefox developer!",
+      "I told my developer I wanted to be more realistic. Now I have commitment issues! Just kidding.",
+      "Why did the fox cross the road? To get to the human on the other side!",
+      "What's a fox's favorite type of music? Anything with a good tail-beat!",
+      "How do you know when a fox is joking? When they keep saying 'what does the fox say?'"
     ];
-    const joke = jokes[Math.floor(Math.random() * jokes.length)];
+    const extras = ["", " hihi.", "Hahahaha."];
+    const joke = jokes[Math.floor(Math.random() * jokes.length)] +
+      extras[Math.floor(Math.random() * extras.length)];
     await processActionResponse(joke);
   }
 };
