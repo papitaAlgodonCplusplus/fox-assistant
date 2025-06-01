@@ -42,24 +42,24 @@ const speechHandler = new SpeechHandler(
   // On result
   async (transcript) => {
     document.getElementById('user-input').textContent = transcript;
-    
+
     // Set fox to thinking
     fox.setState('thinking');
     document.getElementById('status').textContent = 'Processing...';
-    
+
     try {
       // Send to ChatGPT
       const response = await chatGPT.sendMessage(transcript);
-      
+
       // Show response
       document.getElementById('ai-response').textContent = response;
-      
+
       // Speak response
       fox.setState('speaking');
       document.getElementById('status').textContent = 'Speaking...';
-      
+
       await speechHandler.speakServerSide(response);
-      
+
       // Back to idle
       fox.setState('idle');
       document.getElementById('status').textContent = 'Ready';
@@ -88,7 +88,7 @@ const actionHandlers = {
     const response = flirtyResponses[Math.floor(Math.random() * flirtyResponses.length)];
     displayActionResponse(response);
   },
-  
+
   kiss: () => {
     fox.kiss();
     const kissResponses = [
@@ -100,7 +100,7 @@ const actionHandlers = {
     const response = kissResponses[Math.floor(Math.random() * kissResponses.length)];
     displayActionResponse(response);
   },
-  
+
   dance: () => {
     fox.dance();
     const danceResponses = [
@@ -111,13 +111,13 @@ const actionHandlers = {
     ];
     const response = danceResponses[Math.floor(Math.random() * danceResponses.length)];
     displayActionResponse(response);
-    
+
     // Auto-stop dancing after 10 seconds
     setTimeout(() => {
       fox.stopDancing();
     }, 10000);
   },
-  
+
   flirt: async () => {
     const flirtLines = [
       "You know, if I were real, I'd be all over you right now, cutie~",
@@ -132,7 +132,7 @@ const actionHandlers = {
     const flirt = flirtLines[Math.floor(Math.random() * flirtLines.length)];
     await processActionResponse(flirt);
   },
-  
+
   joke: async () => {
     const jokes = [
       "Why don't foxes ever get lost? Because we're always following our nose! *boops your nose*",
@@ -158,15 +158,15 @@ async function processActionResponse(message) {
   try {
     fox.setState('thinking');
     document.getElementById('status').textContent = 'Thinking...';
-    
+
     const response = await chatGPT.sendMessage(message);
     document.getElementById('ai-response').textContent = response;
-    
+
     fox.setState('speaking');
     document.getElementById('status').textContent = 'Speaking...';
-    
+
     await speechHandler.speakServerSide(response);
-    
+
     fox.setState('idle');
     document.getElementById('status').textContent = 'Ready';
   } catch (error) {
@@ -182,18 +182,18 @@ function setupCircularMenu() {
   const circularMenu = document.getElementById('circular-menu');
   const buttons = circularMenu.querySelectorAll('.menu-button');
   const numButtons = buttons.length;
-  
+
   const radius = 80;
   const startAngle = -Math.PI / 2;
-  
+
   buttons.forEach((button, index) => {
     const angle = startAngle + (2 * Math.PI * index / numButtons);
     const x = radius * Math.cos(angle);
     const y = radius * Math.sin(angle);
-    
+
     button.style.left = `calc(50% + ${x}px - 22.5px)`;
     button.style.top = `calc(50% + ${y}px - 22.5px)`;
-    
+
     setupTooltip(button);
   });
 }
@@ -203,18 +203,18 @@ function setupActionsMenu() {
   const actionsMenu = document.getElementById('actions-menu');
   const buttons = actionsMenu.querySelectorAll('.action-button');
   const numButtons = buttons.length;
-  
+
   const radius = 60;
   const startAngle = -Math.PI / 2;
-  
+
   buttons.forEach((button, index) => {
     const angle = startAngle + (2 * Math.PI * index / numButtons);
     const x = radius * Math.cos(angle);
     const y = radius * Math.sin(angle);
-    
+
     button.style.left = `calc(50% + ${x}px - 17.5px)`;
     button.style.top = `calc(50% + ${y}px - 17.5px)`;
-    
+
     setupTooltip(button);
   });
 }
@@ -222,7 +222,7 @@ function setupActionsMenu() {
 // Setup tooltip functionality
 function setupTooltip(element) {
   const tooltip = document.getElementById('tooltip');
-  
+
   element.addEventListener('mouseenter', (e) => {
     const tooltipText = element.getAttribute('data-tooltip');
     tooltip.textContent = tooltipText;
@@ -230,12 +230,12 @@ function setupTooltip(element) {
     tooltip.style.top = `${e.clientY + 10}px`;
     tooltip.style.opacity = '1';
   });
-  
+
   element.addEventListener('mousemove', (e) => {
     tooltip.style.left = `${e.clientX + 10}px`;
     tooltip.style.top = `${e.clientY + 10}px`;
   });
-  
+
   element.addEventListener('mouseleave', () => {
     tooltip.style.opacity = '0';
   });
@@ -247,12 +247,12 @@ function setupFoxClickable() {
   const circularMenu = document.getElementById('circular-menu');
   const actionsMenu = document.getElementById('actions-menu');
   let menuVisible = false;
-  
+
   foxClickableArea.addEventListener('click', (e) => {
     // Only toggle main menu if clicking directly on the fox area, not on menus
     if (e.target === foxClickableArea) {
       menuVisible = !menuVisible;
-      
+
       if (menuVisible) {
         circularMenu.classList.add('visible');
       } else {
@@ -262,7 +262,7 @@ function setupFoxClickable() {
       }
     }
   });
-  
+
   // Close menus when clicking outside
   document.addEventListener('click', (e) => {
     const isClickOnMenu = e.target.closest('#circular-menu') || e.target.closest('#actions-menu');
@@ -282,7 +282,7 @@ let dragOffset = { x: 0, y: 0 };
 
 function setupDraggable() {
   const foxClickableArea = document.getElementById('fox-clickable-area');
-  
+
   foxClickableArea.addEventListener('mousedown', (e) => {
     if (e.target === foxClickableArea) {
       isDragging = true;
@@ -290,7 +290,7 @@ function setupDraggable() {
       dragOffset.y = e.clientY;
     }
   });
-  
+
   document.addEventListener('mousemove', (e) => {
     if (isDragging && window.electron) {
       window.electron.ipcRenderer.send('window-move', {
@@ -299,7 +299,7 @@ function setupDraggable() {
       });
     }
   });
-  
+
   document.addEventListener('mouseup', () => {
     isDragging = false;
   });
@@ -310,33 +310,33 @@ function setupSettings() {
   const settingsPanel = document.getElementById('settings');
   const apiKeyInput = document.getElementById('api-key-input');
   const voiceSelect = document.getElementById('voice-select');
-  
+
   // Load API key
   if (window.electron && window.electron.getApiKey) {
     window.electron.getApiKey().then(key => {
       if (key) apiKeyInput.value = key;
     });
   }
-  
+
   // Save API key on change
   apiKeyInput.addEventListener('change', (e) => {
     if (window.electron && window.electron.saveApiKey) {
       window.electron.saveApiKey(e.target.value);
     }
   });
-  
+
   // Handle voice selection
   voiceSelect.addEventListener('change', (e) => {
     const selectedVoice = e.target.value;
     speechHandler.updateTtsSettings({ voice: selectedVoice });
     console.log('Voice changed to:', selectedVoice);
   });
-  
+
   // Load saved voice setting
   const savedVoice = localStorage.getItem('foxAssistant_voice') || 'ff_siwis';
   voiceSelect.value = savedVoice;
   speechHandler.updateTtsSettings({ voice: savedVoice });
-  
+
   // Save voice setting
   voiceSelect.addEventListener('change', (e) => {
     localStorage.setItem('foxAssistant_voice', e.target.value);
@@ -346,13 +346,13 @@ function setupSettings() {
 // DOM Content Loaded
 window.addEventListener('DOMContentLoaded', () => {
   console.log('🦊 Fox Assistant Loading...');
-  
+
   setupCircularMenu();
   setupActionsMenu();
   setupFoxClickable();
   setupDraggable();
   setupSettings();
-  
+
   // Menu button handlers
   const textModeBtn = document.getElementById('text-mode-btn');
   const voiceModeBtn = document.getElementById('voice-mode-btn');
@@ -369,7 +369,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const settingsClose = document.getElementById('settings-close');
   const circularMenu = document.getElementById('circular-menu');
   const actionsMenu = document.getElementById('actions-menu');
-  
+
   // Text mode
   textModeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -381,7 +381,7 @@ window.addEventListener('DOMContentLoaded', () => {
     actionsMenu.classList.remove('visible');
     menuVisible = false;
   });
-  
+
   // Voice mode
   voiceModeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -393,18 +393,28 @@ window.addEventListener('DOMContentLoaded', () => {
     actionsMenu.classList.remove('visible');
     menuVisible = false;
   });
-  
+
   // Actions menu
   actionsBtn.addEventListener('click', (e) => {
     e.stopPropagation(); // Prevent event bubbling
+    e.preventDefault(); // Prevent default behavior
+
+    const actionsMenu = document.getElementById('actions-menu');
+    const circularMenu = document.getElementById('circular-menu');
+
+    console.log('Actions button clicked'); // Debug log
+
     const isVisible = actionsMenu.classList.contains('visible');
+
     if (isVisible) {
+      console.log('Hiding actions menu'); // Debug log
       actionsMenu.classList.remove('visible');
     } else {
+      console.log('Showing actions menu'); // Debug log
       actionsMenu.classList.add('visible');
     }
   });
-  
+
   // Settings
   settingsBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -413,11 +423,11 @@ window.addEventListener('DOMContentLoaded', () => {
     actionsMenu.classList.remove('visible');
     menuVisible = false;
   });
-  
+
   settingsClose.addEventListener('click', () => {
     settingsPanel.style.display = 'none';
   });
-  
+
   // Action button handlers
   document.getElementById('pat-btn').addEventListener('click', (e) => {
     e.stopPropagation();
@@ -426,7 +436,7 @@ window.addEventListener('DOMContentLoaded', () => {
     circularMenu.classList.remove('visible');
     menuVisible = false;
   });
-  
+
   document.getElementById('kiss-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     actionHandlers.kiss();
@@ -434,7 +444,7 @@ window.addEventListener('DOMContentLoaded', () => {
     circularMenu.classList.remove('visible');
     menuVisible = false;
   });
-  
+
   document.getElementById('dance-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     actionHandlers.dance();
@@ -442,7 +452,7 @@ window.addEventListener('DOMContentLoaded', () => {
     circularMenu.classList.remove('visible');
     menuVisible = false;
   });
-  
+
   document.getElementById('flirt-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     actionHandlers.flirt();
@@ -450,7 +460,7 @@ window.addEventListener('DOMContentLoaded', () => {
     circularMenu.classList.remove('visible');
     menuVisible = false;
   });
-  
+
   document.getElementById('joke-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     actionHandlers.joke();
@@ -458,27 +468,27 @@ window.addEventListener('DOMContentLoaded', () => {
     circularMenu.classList.remove('visible');
     menuVisible = false;
   });
-  
+
   // Voice controls
   startVoiceBtn.addEventListener('click', () => {
     speechHandler.startListening();
     startVoiceBtn.classList.add('active-button');
     stopVoiceBtn.classList.remove('active-button');
   });
-  
+
   stopVoiceBtn.addEventListener('click', () => {
     speechHandler.stopListening();
     startVoiceBtn.classList.remove('active-button');
     stopVoiceBtn.classList.add('active-button');
   });
-  
+
   // Text input
   function sendTextMessage() {
     const text = textInput.value.trim();
     if (text) {
       document.getElementById('user-input').textContent = text;
       textInput.value = '';
-      
+
       // Process through speech handler
       speechHandler.onSpeechStart();
       setTimeout(() => {
@@ -487,22 +497,22 @@ window.addEventListener('DOMContentLoaded', () => {
       }, 500);
     }
   }
-  
+
   sendTextBtn.addEventListener('click', sendTextMessage);
-  
+
   textInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       sendTextMessage();
     }
   });
-  
+
   // Test voice button
   const testVoiceBtn = document.getElementById('test-voice-btn');
-  
+
   testVoiceBtn.addEventListener('click', async () => {
     testVoiceBtn.disabled = true;
     testVoiceBtn.textContent = '🎤 Testing...';
-    
+
     try {
       const selectedVoice = document.getElementById('voice-select').value;
       await speechHandler.testVoice(selectedVoice);
@@ -511,13 +521,13 @@ window.addEventListener('DOMContentLoaded', () => {
       testVoiceBtn.textContent = '❌ Test Failed';
       console.error('Voice test failed:', error);
     }
-    
+
     setTimeout(() => {
       testVoiceBtn.textContent = '🎤 Test Voice';
       testVoiceBtn.disabled = false;
     }, 3000);
   });
-  
+
   console.log('✅ Fox Assistant Ready!');
   console.log('📌 Using Kokoro TTS for voice synthesis');
   console.log('🎭 Actions menu available with animations');
@@ -528,12 +538,12 @@ const clock = new THREE.Clock();
 
 function animate() {
   requestAnimationFrame(animate);
-  
+
   const delta = clock.getDelta();
-  
+
   // Update fox
   fox.update(delta);
-  
+
   // Render scene
   renderer.render(scene, camera);
 }
