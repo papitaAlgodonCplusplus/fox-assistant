@@ -8,7 +8,7 @@ export class SpeechHandler {
     this.audioChunks = [];
     this.audioElement = new Audio();
     this.ttsSettings = {
-      voice: 'af_bella',
+      voice: 'ff_siwis',
       format: 'mp3',
       speed: 1.0
     };

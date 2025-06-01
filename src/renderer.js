@@ -58,7 +58,7 @@ const speechHandler = new SpeechHandler(
       fox.setState('speaking');
       document.getElementById('status').textContent = 'Speaking...';
       
-      await speechHandler.speak(response);
+      await speechHandler.speakServerSide(response);
       
       // Back to idle
       fox.setState('idle');
