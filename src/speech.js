@@ -98,7 +98,6 @@ export class SpeechHandler {
     console.log('🔊 Updated TTS settings:', this.ttsSettings);
   }
 
-  // Send text to server to generate voice with Kokoro TTS
   async speakServerSide(text) {
     if (!text) return;
 
@@ -107,12 +106,12 @@ export class SpeechHandler {
       const response = await fetch('http://localhost:3001/speak', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           text,
           output_format: this.ttsSettings.format,
           preset_voice: [this.ttsSettings.voice],
           speed: this.ttsSettings.speed,
-          stream: true // Always use streaming for better performance
+          stream: true
         }),
       });
 
@@ -124,19 +123,51 @@ export class SpeechHandler {
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
 
-      // Play the audio
-      this.audioElement.src = audioUrl;
-      await this.audioElement.play();
-      console.log('✅ Voice played from server');
+      // Process the audio with pitch shift
+      if (this.ttsSettings.voice.startsWith('ff_')) {
+        await this.playAudioWithPitchShift(audioUrl, -2);
+      } else {
+        this.audioElement.src = audioUrl;
+        await this.audioElement.play();
+      }
+    } catch (error) {
+      console.error('❌ TTS server error:', error);
+      await this.displayText(text);
+    }
+  }
 
-      // Clean up the object URL after playback
-      this.audioElement.onended = () => {
+  async playAudioWithPitchShift(audioUrl, semitones) {
+    try {
+      // Create AudioContext
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createBufferSource();
+
+      // Fetch and decode the audio data
+      const response = await fetch(audioUrl);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+      // Create pitch shifter
+      source.buffer = audioBuffer;
+      source.playbackRate.value = Math.pow(2, semitones / 12); // Convert semitones to playback rate
+
+      // Connect to destination and play
+      source.connect(audioContext.destination);
+      source.start(0);
+
+      console.log(`✅ Voice played with ${semitones} semitone pitch shift`);
+
+      // Clean up
+      source.onended = () => {
+        audioContext.close();
         URL.revokeObjectURL(audioUrl);
       };
 
     } catch (error) {
-      console.error('❌ TTS server error:', error);
-      await this.displayText(text);
+      console.error('❌ Audio processing error:', error);
+      // Fallback to normal playback
+      this.audioElement.src = audioUrl;
+      await this.audioElement.play();
     }
   }
 
