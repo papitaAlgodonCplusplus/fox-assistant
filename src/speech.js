@@ -1,168 +1,82 @@
-const { spawn } = require('child_process');
+const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const axios = require('axios');
-const { exec } = require('child_process');
 
-// Coqui TTS-only speech handler for Fox Assistant
 export class SpeechHandler {
   constructor(onSpeechStart, onSpeechEnd, onResult) {
-    this.synthesis = window.speechSynthesis;
     this.onSpeechStart = onSpeechStart;
     this.onSpeechEnd = onSpeechEnd;
     this.onResult = onResult;
     this.isListening = false;
-    this.textInputCreated = false;
     this.mediaRecorder = null;
     this.audioChunks = [];
     this.tempDir = path.join(os.tmpdir(), 'fox-assistant');
-
-    // OpenAI API key for Whisper (speech-to-text only)
+    
+    // OpenAI API key for Whisper STT
     this.apiKey = process.env.OPENAI_API_KEY;
     this.audioElement = new Audio();
-
-    // Coqui TTS Configuration - Primary and only TTS method
-    this.coquiServerUrl = 'http://localhost:5002';
-    this.selectedVoice = 'cloned_voice';
-    this.coquiModelPath = path.join(os.homedir(), 'coqui-models');
-    this.speakerWavPath = path.join(this.coquiModelPath, 'speaker.wav');
-    this.voiceLanguage = 'en';
-    this.modelName = 'tts_models/multilingual/multi-dataset/xtts_v2';
-    this.serverProcess = null;
-    this.isServerStarting = false;
-
+    
+    // TTS Configuration
+    this.ttsServerUrl = 'http://localhost:5002';
+    this.speakerWavPath = path.join(process.cwd(), 'coqui-models', 'speaker.wav');
+    this.outputPath = path.join(process.cwd(), 'output.wav');
+    
     // Create temp directory if it doesn't exist
     if (!fs.existsSync(this.tempDir)) {
       fs.mkdirSync(this.tempDir, { recursive: true });
     }
-
-    // Create coqui models directory if it doesn't exist
-    if (!fs.existsSync(this.coquiModelPath)) {
-      fs.mkdirSync(this.coquiModelPath, { recursive: true });
-    }
-
-    console.log('🦊 Coqui TTS Speech Handler initialized');
-    console.log(`📁 Coqui models path: ${this.coquiModelPath}`);
-    console.log(`🎤 Speaker WAV path: ${this.speakerWavPath}`);
+    
+    console.log('🦊 Speech Handler initialized');
+    console.log(`🎤 Speaker WAV: ${this.speakerWavPath}`);
+    console.log(`🌐 TTS Server: ${this.ttsServerUrl}`);
   }
 
-  setupAudioRecording() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      console.error('Media devices API not supported');
-      this.useFallbackMode();
-      return false;
-    }
-    return true;
-  }
-
-  useFallbackMode() {
-    console.log('Using fallback text input mode');
-    if (this.textInputCreated) return;
-    this.textInputCreated = true;
-
-    const inputContainer = document.createElement('div');
-    inputContainer.style.position = 'fixed';
-    inputContainer.style.bottom = '80px';
-    inputContainer.style.left = '0';
-    inputContainer.style.width = '100%';
-    inputContainer.style.textAlign = 'center';
-    inputContainer.style.zIndex = '1000';
-
-    const textInput = document.createElement('input');
-    textInput.type = 'text';
-    textInput.placeholder = 'Type your message here...';
-    textInput.style.width = '70%';
-    textInput.style.padding = '10px';
-    textInput.style.fontSize = '16px';
-
-    const sendButton = document.createElement('button');
-    sendButton.textContent = 'Send';
-    sendButton.style.padding = '10px 20px';
-    sendButton.style.marginLeft = '10px';
-
-    inputContainer.appendChild(textInput);
-    inputContainer.appendChild(sendButton);
-    document.body.appendChild(inputContainer);
-
-    sendButton.addEventListener('click', () => {
-      const text = textInput.value.trim();
-      if (text) {
-        this.onSpeechStart();
-        setTimeout(() => {
-          this.onSpeechEnd();
-          this.onResult(text);
-          textInput.value = '';
-        }, 500);
-      }
-    });
-
-    textInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        sendButton.click();
-      }
-    });
-  }
-
+  // Start listening for voice input
   startListening() {
-    if (this.isListening) {
-      console.log('Already listening, not starting again');
-      return;
-    }
-
-    if (!this.setupAudioRecording()) {
-      return;
-    }
-
+    if (this.isListening) return;
+    
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
         this.isListening = true;
         this.onSpeechStart();
-
+        
         this.mediaRecorder = new MediaRecorder(stream);
         this.audioChunks = [];
-
+        
         this.mediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0) {
             this.audioChunks.push(event.data);
           }
         };
-
+        
         this.mediaRecorder.onstop = async () => {
-          try {
-            await this.processAudioWithWhisper();
-          } catch (error) {
-            console.error('Error processing audio with Whisper:', error);
-            this.onSpeechEnd();
-          }
+          await this.processAudioWithWhisper();
           stream.getTracks().forEach(track => track.stop());
         };
-
+        
         this.mediaRecorder.start();
         console.log('🎤 Recording started');
       })
       .catch(error => {
         console.error('Error accessing microphone:', error);
         this.isListening = false;
-        this.useFallbackMode();
       });
   }
 
+  // Stop listening
   stopListening() {
     if (!this.isListening || !this.mediaRecorder) return;
-
-    try {
-      this.mediaRecorder.stop();
-      this.isListening = false;
-      console.log('🛑 Recording stopped');
-    } catch (error) {
-      console.error('Error stopping recording:', error);
-    }
+    
+    this.mediaRecorder.stop();
+    this.isListening = false;
+    console.log('🛑 Recording stopped');
   }
 
+  // Process recorded audio with Whisper API
   async processAudioWithWhisper() {
     if (this.audioChunks.length === 0) {
-      console.error('No audio data recorded');
       this.onSpeechEnd();
       return;
     }
@@ -174,48 +88,11 @@ export class SpeechHandler {
       const buffer = Buffer.from(arrayBuffer);
       fs.writeFileSync(audioFilePath, buffer);
 
-      console.log('🎵 Audio saved to temporary file:', audioFilePath);
-
-      if (this.apiKey) {
-        const transcript = await this.sendToWhisperAPI(audioFilePath);
-        if (transcript) {
-          this.onSpeechEnd();
-          this.onResult(transcript);
-        } else {
-          throw new Error('No transcript received from Whisper API');
-        }
-      } else {
-        const transcript = await this.useBrowserSpeechRecognition(audioFilePath);
-        if (transcript) {
-          this.onSpeechEnd();
-          this.onResult(transcript);
-        } else {
-          throw new Error('Speech recognition failed');
-        }
-      }
-
-      if (fs.existsSync(audioFilePath)) {
-        fs.unlinkSync(audioFilePath);
-      }
-
-    } catch (error) {
-      console.error('Error processing audio:', error);
-      this.onSpeechEnd();
-    }
-  }
-
-  async sendToWhisperAPI(audioFilePath) {
-    if (!this.apiKey) {
-      console.error('OpenAI API key not found for Whisper STT');
-      return null;
-    }
-
-    try {
       const formData = new FormData();
       const audioFile = fs.readFileSync(audioFilePath);
-      const audioBlob = new Blob([audioFile], { type: 'audio/webm' });
-
-      formData.append('file', audioBlob, 'audio.webm');
+      const audioBlob2 = new Blob([audioFile], { type: 'audio/webm' });
+      
+      formData.append('file', audioBlob2, 'audio.webm');
       formData.append('model', 'whisper-1');
 
       const response = await axios.post(
@@ -229,419 +106,145 @@ export class SpeechHandler {
         }
       );
 
-      console.log('📝 Whisper API response:', response.data);
-
       if (response.data && response.data.text) {
-        return response.data.text;
-      } else {
-        console.error('Unexpected response format from Whisper API');
-        return null;
+        this.onSpeechEnd();
+        this.onResult(response.data.text);
+      }
+
+      // Cleanup
+      if (fs.existsSync(audioFilePath)) {
+        fs.unlinkSync(audioFilePath);
       }
     } catch (error) {
-      console.error('Error calling Whisper API:', error);
-      if (error.response) {
-        console.error('API response error:', error.response.data);
-      }
-      return null;
+      console.error('Error processing audio:', error);
+      this.onSpeechEnd();
     }
   }
 
-  async useBrowserSpeechRecognition(audioFilePath) {
-    return new Promise((resolve) => {
-      const audio = new Audio();
-      audio.src = URL.createObjectURL(new Blob([fs.readFileSync(audioFilePath)]));
-
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        console.error('Speech recognition not supported in this browser.');
-        resolve(null);
-        return;
-      }
-
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        resolve(transcript);
-      };
-
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        resolve(null);
-      };
-
-      recognition.onend = () => {
-        resolve(null);
-      };
-
-      audio.onplay = () => {
-        recognition.start();
-      };
-
-      audio.play().catch(err => {
-        console.error('Error playing audio:', err);
-        resolve(null);
-      });
-    });
-  }
-
-  // Main speak method - Coqui TTS ONLY
+  // Main speak method using TTS server
   async speak(text) {
-    console.log('🗣️ Speaking with Coqui TTS:', text.substring(0, 50) + '...');
-
+    console.log('🗣️ Speaking:', text.substring(0, 50) + '...');
+    
     try {
-      // Ensure Coqui server is running
-      const isServerRunning = await this.checkCoquiServer();
+      // Check if server is running
+      const isServerRunning = await this.checkTTSServer();
       if (!isServerRunning) {
-        console.log('🚀 Coqui TTS server not running, attempting to start...');
-        await this.startCoquiServer();
-
-        // Wait a bit for server to initialize
-        await new Promise(resolve => setTimeout(resolve, 3000));
-
-        // Check again
-        const isNowRunning = await this.checkCoquiServer();
-        if (!isNowRunning) {
-          throw new Error('Failed to start Coqui TTS server');
-        }
+        throw new Error('TTS server not running on port 5002');
       }
-
-      // Generate speech using Coqui TTS
-      const audioData = await this.generateCoquiSpeech(text);
-      console.log('🎵 Audio data received from Coqui TTS');
-
-      if (audioData) {
-        await this.saveAudioLocally(audioData, 'out.wav');
-        await this.playAudioData(audioData);
-        console.log('✅ Coqui TTS speech completed successfully');
-      } else {
-        throw new Error('Failed to generate speech with Coqui TTS');
-      }
+      
+      // Generate speech using Python command
+      await this.generateSpeech(text);
+      
+      // Play the generated audio
+      await this.playGeneratedAudio();
+      
     } catch (error) {
-      console.error('❌ Coqui TTS error:', error);
-      // Fallback to text display since we're Coqui-only
+      console.error('❌ TTS Error:', error);
+      // Fallback to display text
       await this.displayText(text);
     }
   }
 
-  // New method to save audio data locally
-  async saveAudioLocally(audioData, filename = 'out.wav') {
+  // Check if TTS server is running
+  async checkTTSServer() {
     try {
-      const fs = require('fs');
-      const path = require('path');
-
-      // Determine save location - you can modify this path as needed
-      const saveDirectory = process.cwd(); // Current working directory
-      const filePath = path.join(saveDirectory, filename);
-
-      // Convert ArrayBuffer to Buffer if needed
-      let buffer;
-      if (audioData instanceof ArrayBuffer) {
-        buffer = Buffer.from(audioData);
-      } else if (Buffer.isBuffer(audioData)) {
-        buffer = audioData;
-      } else {
-        // Handle Uint8Array or similar
-        buffer = Buffer.from(audioData);
-      }
-
-      // Write the audio data to file
-      fs.writeFileSync(filePath, buffer);
-
-      console.log(`💾 Audio saved locally as: ${filePath}`);
-      console.log(`📁 File size: ${(buffer.length / 1024).toFixed(2)} KB`);
-
-      return filePath;
+      const response = await axios.get(this.ttsServerUrl, { timeout: 2000 });
+      return true;
     } catch (error) {
-      console.error('❌ Error saving audio locally:', error);
-      throw error;
+      console.log('⚠️ TTS server not reachable at', this.ttsServerUrl);
+      return false;
     }
   }
 
-  // Method to save to a specific directory
-  async saveAudioToDirectory(audioData, directory, filename = 'out.wav') {
-    try {
-      const fs = require('fs');
-      const path = require('path');
-
-      // Ensure directory exists
-      if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory, { recursive: true });
-        console.log(`📁 Created directory: ${directory}`);
-      }
-
-      const filePath = path.join(directory, filename);
-
-      // Convert ArrayBuffer to Buffer if needed
-      let buffer;
-      if (audioData instanceof ArrayBuffer) {
-        buffer = Buffer.from(audioData);
-      } else if (Buffer.isBuffer(audioData)) {
-        buffer = audioData;
-      } else {
-        buffer = Buffer.from(audioData);
-      }
-
-      // Write the audio data to file
-      fs.writeFileSync(filePath, buffer);
-
-      console.log(`💾 Audio saved to: ${filePath}`);
-      console.log(`📁 File size: ${(buffer.length / 1024).toFixed(2)} KB`);
-
-      return filePath;
-    } catch (error) {
-      console.error('❌ Error saving audio to directory:', error);
-      throw error;
-    }
-  }
-
-  // Check if Coqui TTS server is running
-  async checkCoquiServer() {
-    const endpoints = [
-      `${this.coquiServerUrl}/`,  // Try root endpoint
-      `${this.coquiServerUrl}/health`,  // Try health endpoint
-      `${this.coquiServerUrl}/api/docs`,  // Try docs endpoint
-    ];
-
-    for (const endpoint of endpoints) {
-      try {
-        console.log(`🔍 Checking Coqui server at: ${endpoint}`);
-        const response = await axios.get(endpoint, {
-          timeout: 3000,
-          validateStatus: (status) => status < 500  // Accept 200, 404, etc but not 500+
-        });
-
-        console.log(`✅ Server responded with status ${response.status} at ${endpoint}`);
-
-        // If we get any response (even 404), the server is running
-        if (response.status < 500) {
-          return true;
-        }
-      } catch (error) {
-        console.log(`❌ Failed to connect to ${endpoint}:`, error.message);
-        continue;
-      }
-    }
-
-    return false;
-  }
-
-  // Start Coqui TTS server
-  async startCoquiServer() {
-    if (this.isServerStarting) {
-      console.log('⏳ Server already starting, please wait...');
-      return;
-    }
-
-    this.isServerStarting = true;
-
+  // Generate speech using Python TTS command
+  async generateSpeech(text) {
     return new Promise((resolve, reject) => {
-      console.log('🚀 Starting Coqui TTS server...');
-
-      // Check if speaker wav file exists
-      if (!fs.existsSync(this.speakerWavPath)) {
-        console.warn(`⚠️ Speaker WAV file not found: ${this.speakerWavPath}`);
-        console.log('💡 Please add a speaker.wav file to the coqui-models directory');
-      }
-
-      // Command to start Coqui TTS server
-      const serverArgs = [
-        '--model_name', this.modelName,
-        '--server',
-        '--port', '5002',
-        '--host', '127.0.0.1'
-      ];
-
-      try {
-        this.serverProcess = spawn('tts-server', serverArgs, {
-          detached: false,
-          stdio: ['ignore', 'pipe', 'pipe']
-        });
-
-        let serverOutput = '';
-
-        this.serverProcess.stdout.on('data', (data) => {
-          const output = data.toString();
-          serverOutput += output;
-          console.log('📋 Coqui server:', output.trim());
-
-          // Check if server is ready
-          if (output.includes('Running on') || output.includes('Serving on')) {
-            console.log('✅ Coqui TTS server started successfully');
-            this.isServerStarting = false;
-            resolve();
-          }
-        });
-
-        this.serverProcess.stderr.on('data', (data) => {
-          const output = data.toString();
-          console.warn('⚠️ Coqui server error:', output.trim());
-        });
-
-        this.serverProcess.on('close', (code) => {
-          console.log(`🔚 Coqui TTS server process exited with code ${code}`);
-          this.isServerStarting = false;
-          this.serverProcess = null;
-        });
-
-        this.serverProcess.on('error', (error) => {
-          console.error('❌ Error starting Coqui TTS server:', error);
-          this.isServerStarting = false;
-          reject(error);
-        });
-
-        // Timeout after 30 seconds
-        setTimeout(() => {
-          if (this.isServerStarting) {
-            console.log('✅ Coqui server timeout reached, assuming ready');
-            this.isServerStarting = false;
-            resolve();
-          }
-        }, 30000);
-
-      } catch (error) {
-        console.error('❌ Failed to spawn Coqui TTS server:', error);
-        this.isServerStarting = false;
-        reject(error);
-      }
-    });
-  }
-
-
-  async generateCoquiSpeech(text) {
-    const modelName = "tts_models/multilingual/multi-dataset/xtts_v2";
-    const speakerWav = "C:\\Users\\AlexQQ\\Desktop\\fox-assistant\\coqui-models\\speaker.wav";
-    const languageIdx = "en";
-    const outPath = "C:\\Users\\AlexQQ\\Desktop\\fox-assistant\\output.wav";
-
-    // Escape any quotes in the input text
-    const safeText = text.replace(/"/g, '\\"');
-    const command = `tts --text "${safeText}" --model_name "${modelName}" --speaker_wav "${speakerWav}" --language_idx "${languageIdx}" --out_path "${outPath}"`;
-
-    return new Promise((resolve, reject) => {
-      exec(command, async (error, stdout, stderr) => {
+      // Escape quotes in text
+      const safeText = text.replace(/"/g, '\\"');
+      
+      // Build the Python command
+      const command = `tts --text "${safeText}" --model_name "tts_models/multilingual/multi-dataset/xtts_v2" --speaker_wav "${this.speakerWavPath}" --language_idx "en" --out_path "${this.outputPath}"`;
+      
+      console.log('🐍 Running TTS command...');
+      
+      exec(command, (error, stdout, stderr) => {
         if (error) {
-          console.error("TTS generation failed:", stderr);
-          return reject(error);
+          console.error('TTS generation failed:', stderr);
+          reject(error);
+          return;
         }
-
-        try {
-          console.log("TTS generation completed successfully:", stdout);
-          const audioData = await fs.readFile(outPath);
-          console.log("Output audio file read successfully: ", outPath);
-          resolve(audioData);
-        } catch (readError) {
-          console.error("Failed to read output audio file:", readError);
-          reject(readError);
-        }
+        
+        console.log('✅ TTS generation completed');
+        resolve();
       });
     });
   }
 
-  // Play audio data
-  async playAudioData(audioData) {
+  // Play the generated audio file
+  async playGeneratedAudio() {
     return new Promise((resolve, reject) => {
-      console.log('🔊 Playing generated audio...');
-
+      if (!fs.existsSync(this.outputPath)) {
+        reject(new Error('Generated audio file not found'));
+        return;
+      }
+      
+      const audioData = fs.readFileSync(this.outputPath);
       const blob = new Blob([audioData], { type: 'audio/wav' });
       const audioUrl = URL.createObjectURL(blob);
-
+      
       this.audioElement.src = audioUrl;
       this.audioElement.onended = () => {
         URL.revokeObjectURL(audioUrl);
         console.log('✅ Audio playback completed');
         resolve();
       };
+      
       this.audioElement.onerror = (error) => {
-        console.error('❌ Audio playback error:', error);
         URL.revokeObjectURL(audioUrl);
         reject(error);
       };
-
-      this.audioElement.play().catch(error => {
-        console.error('❌ Audio play error:', error);
-        URL.revokeObjectURL(audioUrl);
-        reject(error);
-      });
+      
+      this.audioElement.play().catch(reject);
     });
   }
 
-  // Set Coqui TTS server URL
-  setCoquiServerUrl(url) {
-    // Handle IPv6 conversion
-    if (url.includes('localhost')) {
-      this.coquiServerUrl = url;
-    } else if (url.includes('[::1]')) {
-      // Convert IPv6 to localhost
-      this.coquiServerUrl = url.replace('[::1]', 'localhost');
-    } else {
-      this.coquiServerUrl = url;
-    }
-    console.log('🌐 Coqui TTS server URL set to:', this.coquiServerUrl);
+  // Test the TTS system
+  async testVoice() {
+    const testText = "Hello! I am Nicolas, your fox assistant. This is a test of my voice.";
+    await this.speak(testText);
   }
 
-
-  // Set speaker WAV file path
-  setSpeakerWav(filePath) {
-    this.speakerWavPath = filePath;
-    console.log('🎤 Speaker WAV file set to:', filePath);
-  }
-
-  // Set voice language
-  setVoiceLanguage(language) {
-    this.voiceLanguage = language;
-    console.log('🌍 Voice language set to:', language);
-  }
-
-  // Legacy method for compatibility (does nothing since we're Coqui-only)
-  setCoquiTTS(enabled) {
-    console.log('🦊 Fox Assistant is Coqui TTS exclusive - ignoring setCoquiTTS call');
-  }
-
-  // Stop Coqui server
-  stopCoquiServer() {
-    if (this.serverProcess) {
-      console.log('🛑 Stopping Coqui TTS server...');
-      this.serverProcess.kill('SIGTERM');
-      this.serverProcess = null;
-    }
-  }
-
-  // Fallback text display when TTS fails
+  // Fallback text display
   async displayText(text) {
     return new Promise((resolve) => {
-      console.log('💬 Displaying text fallback:', text);
-
       const speechBubble = document.createElement('div');
       speechBubble.textContent = text;
-      speechBubble.style.position = 'fixed';
-      speechBubble.style.top = '20px';
-      speechBubble.style.left = '50%';
-      speechBubble.style.transform = 'translateX(-50%)';
-      speechBubble.style.maxWidth = '80%';
-      speechBubble.style.padding = '15px';
-      speechBubble.style.backgroundColor = 'rgba(0, 255, 157, 0.2)';
-      speechBubble.style.color = '#00ff9d';
-      speechBubble.style.border = '1px solid rgba(0, 255, 157, 0.5)';
-      speechBubble.style.borderRadius = '10px';
-      speechBubble.style.zIndex = '1000';
-      speechBubble.style.boxShadow = '0 0 20px rgba(0, 255, 157, 0.4)';
-      speechBubble.style.fontFamily = 'Rajdhani, sans-serif';
-      speechBubble.style.fontSize = '14px';
-      speechBubble.style.textShadow = '0 0 5px rgba(0, 255, 157, 0.8)';
-
+      speechBubble.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: 80%;
+        padding: 15px;
+        background-color: rgba(0, 255, 157, 0.2);
+        color: #00ff9d;
+        border: 1px solid rgba(0, 255, 157, 0.5);
+        border-radius: 10px;
+        z-index: 1000;
+        box-shadow: 0 0 20px rgba(0, 255, 157, 0.4);
+        font-family: Rajdhani, sans-serif;
+        font-size: 14px;
+        text-shadow: 0 0 5px rgba(0, 255, 157, 0.8);
+      `;
+      
       document.body.appendChild(speechBubble);
-
-      // Auto-hide based on text length
+      
       const displayTime = Math.max(3000, text.length * 60);
-
+      
       setTimeout(() => {
         speechBubble.style.opacity = '0';
         speechBubble.style.transition = 'opacity 0.5s';
-
+        
         setTimeout(() => {
           if (speechBubble.parentNode) {
             document.body.removeChild(speechBubble);
@@ -651,7 +254,10 @@ export class SpeechHandler {
       }, displayTime);
     });
   }
+  
+  // Set speaker WAV path
+  setSpeakerWav(path) {
+    this.speakerWavPath = path;
+    console.log('🎤 Speaker WAV updated:', path);
+  }
 }
-
-// Initialize Coqui TTS on module load
-console.log('🦊 Coqui TTS Speech Handler module loaded');
